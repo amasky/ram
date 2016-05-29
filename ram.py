@@ -1,8 +1,11 @@
 import chainer
 import chainer.functions as F
 import chainer.links as L
-import numpy as np
 
+import numpy as np
+from crop import crop
+
+_ = 0
 
 class RAM(chainer.Chain):
 
@@ -14,9 +17,9 @@ class RAM(chainer.Chain):
             emb_x = L.Linear(g_size*g_size, n_e), # x: image
             fc_lg = L.Linear(n_e, n_h), # l to g: glimpse
             fc_xg = L.Linear(n_e, n_h), # x to g
-            #core_lstm = L.LSTM(n_h, n_h), # core LSTM net
-            core_hh = L.Linear(n_h, n_h), # core rnn
-            core_gh = L.Linear(n_e, n_h), # core rnn
+            core_lstm = L.LSTM(n_h, n_h), # core LSTM net
+            #core_hh = L.Linear(n_h, n_h), # core rnn
+            #core_gh = L.Linear(n_e, n_h), # core rnn
             fc_ha = L.Linear(n_h, 10), # h to a: action net
             fc_hl = L.Linear(n_h, 2) # h to l
         )
@@ -26,16 +29,16 @@ class RAM(chainer.Chain):
         self.n_step = n_step
         self.b = None
 
-    # def reset_state(self):
-    #    self.core_lstm.reset_state() # c and h
+    def reset_state(self):
+        self.core_lstm.reset_state() # c and h
 
     def clear(self):
-        self.loss = 0
+        self.loss = None
         self.accuracy = None
 
     def __call__(self, x, t, train=True):
         self.clear()
-        #self.reset_state()
+        self.reset_state()
 
         # init chainer.Variable
         bs = x.data.shape[0]
@@ -91,8 +94,8 @@ class RAM(chainer.Chain):
         g = F.relu(self.fc_lg(hl) + self.fc_xg(hx))
 
         # Core Net
-        #h = self.core_lstm(g) #  LSTM(g + h_t-1)
-        h = F.relu(self.core_hh(h) + self.core_gh(hx))
+        h = self.core_lstm(g) #  LSTM(g + h_t-1)
+        #h = F.relu(self.core_hh(h) + self.core_gh(hx))
 
         # Location Net
         l = F.tanh(self.fc_hl(h))
@@ -102,14 +105,14 @@ class RAM(chainer.Chain):
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
             s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
             s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
-            l = F.tanh(F.concat((s1, s2), axis=1))
+            l = F.tanh(F.concat((s1,s2), axis=1))
 
         if action:
             # Action Net
             y = self.fc_ha(h)
             if train:
                 # location policy
-                log_pl = ((s1 - l1) * (s1 - l1) + (s2 - l2) * (s2 - l2))
+                log_pl = (s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2)
                 log_pl = F.reshape(log_pl, (-1,))
                 return h, l, y, log_pl
             else:

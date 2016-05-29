@@ -40,4 +40,3 @@ class Crop(function.Function):
 
 def crop(x, loc, size):
     return Crop(loc, size)(x)
-    
