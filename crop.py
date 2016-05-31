@@ -21,18 +21,18 @@ class Crop(function.Function):
     def forward(self, x):
         xp = cuda.get_array_module(*x)
         n, c = x[0].shape[:2]
-        y = xp.zeros((n, c, self.size, self.size), dtype=numpy.float32)
+        y = xp.zeros((n,c,self.size,self.size), dtype=numpy.float32)
         for k in range(x[0].shape[0]):
-            y[k]= x[0][k, :, self.i1[k]:self.i2[k], self.i1[k]:self.i2[k]]
+            y[k]= x[0][k,:,self.i1[k,0]:self.i2[k,0],self.i1[k,1]:self.i2[k,1]]
         return y,
 
     def backward(self, x, gy):
         xp = cuda.get_array_module(*x)
         n, c = gy[0].shape[:2]
         h, w = x[0].shape[2:]
-        gx = xp.zeros((n, c, h, w), dtype=numpy.float32)
+        gx = xp.zeros((n,c,h,w), dtype=numpy.float32)
         for k in range(n):
-            gx[k, :, self.i1[k]:self.i2[k], self.i1[k]:self.i2[k]] = gy[0][k]
+            gx[k,:,self.i1[k,0]:self.i2[k,0],self.i1[k,1]:self.i2[k,1]] = gy[0][k]
         return gx,
 
 def crop(x, loc, size):

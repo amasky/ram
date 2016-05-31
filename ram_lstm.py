@@ -75,7 +75,10 @@ class RAM(chainer.Chain):
 
     def forward(self, x, l, train, action):
         # Retina Encoding
-        loc = cuda.cupy.asnumpy(l.data)
+        if self.xp == np:
+            loc = l.data
+        else:
+            loc = self.xp.asnumpy(l.data)
         loc = (loc+1)*0.5*(self.in_size-self.g_size+1) + self.g_size/2
         loc = np.clip(loc, self.g_size/2, self.in_size-self.g_size/2)
         loc = np.floor(loc).astype(np.int32)
