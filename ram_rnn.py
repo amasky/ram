@@ -6,7 +6,6 @@ import chainer.links as L
 import numpy as np
 from crop import crop
 
-_ = 0
 
 class RAM(chainer.Chain):
 
@@ -33,29 +32,24 @@ class RAM(chainer.Chain):
 
     def __call__(self, x, t, train=True):
         self.clear()
+        bs = x.data.shape[0] # batch size
 
         # init chainer.Variable
-        bs = x.data.shape[0]
-        xp = self.xp
-        self.ln_var = chainer.Variable(
-            xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(0.01),
-            volatile='auto')
-        self.zeros = chainer.Variable(
-            xp.zeros(bs, dtype=np.float32), volatile='auto')
-        self.ones = chainer.Variable(
-            xp.ones(bs, dtype=np.float32), volatile='auto')
-
-        # init location and hiddens
         l = chainer.Variable(
-            xp.random.uniform(-1, 1, size=(bs,2)).astype(np.float32),
+            self.xp.random.uniform(-1, 1, size=(bs,2)).astype(np.float32),
             volatile='auto')
         h = chainer.Variable(
-            xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
+            self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile='auto')
+        if train:
+            # var = 0.01
+            self.ln_var = chainer.Variable(
+                self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(0.01),
+                volatile='auto')
 
         # forward n_step times
         for i in range(self.n_step - 1):
-            h, l, _, _ = self.forward(h, x, l, train, action=False)
+            h, l = self.forward(h, x, l, train, action=False)[:2]
         h, l, y, log_pl = self.forward(h, x, l, train, action=True)
 
         # loss with softmax cross entropy
@@ -64,14 +58,19 @@ class RAM(chainer.Chain):
 
         # loss with reinforce
         if train:
-            conds = chainer.Variable(
-                xp.where(xp.argmax(y.data,axis=1)==t.data, True, False),
+            condition = chainer.Variable(
+                self.xp.where(
+                    self.xp.argmax(y.data,axis=1)==t.data, True, False),
                 volatile='auto')
-            r = F.where(conds, self.ones, self.zeros) # reward
+            zeros = chainer.Variable(
+                self.xp.zeros(bs, dtype=np.float32), volatile='auto')
+            ones = chainer.Variable(
+                self.xp.ones(bs, dtype=np.float32), volatile='auto')
+            r = F.where(condition, ones, zeros) # reward
             if self.b is None:
                 self.b = F.sum(r).data / bs
             self.b = 0.9*self.b + 0.1*F.sum(r).data/bs # bias: Ex[r]
-            self.loss += F.sum(log_pl * (r - self.b*self.ones)) / bs
+            self.loss += F.sum(log_pl * (r - self.b*ones)) / bs
         return self.loss
 
     def forward(self, h, x, l, train, action):
@@ -107,10 +106,10 @@ class RAM(chainer.Chain):
             y = self.fc_ha(h)
             if train:
                 # location policy
-                log_pl = (s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2)
+                log_pl = 50 * ((s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2))
                 log_pl = F.reshape(log_pl, (-1,))
                 return h, l, y, log_pl
             else:
-                return h, l, y, _
+                return h, l, y, 0
         else:
-            return h, l, _, _
+            return h, l, 0, 0
