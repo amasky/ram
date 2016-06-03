@@ -24,6 +24,7 @@ class RAM(chainer.Chain):
         self.in_size = in_size
         self.g_size = g_size
         self.n_step = n_step
+        self.var = 0.001
         self.b = None
 
     def clear(self):
@@ -41,11 +42,9 @@ class RAM(chainer.Chain):
         h = chainer.Variable(
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile='auto')
-        if train:
-            # var = 0.01
-            self.ln_var = chainer.Variable(
-                self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(0.01),
-                volatile='auto')
+        self.ln_var = chainer.Variable(
+            self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(self.var),
+            volatile='auto')
 
         # forward n_step times
         for i in range(self.n_step - 1):
@@ -58,19 +57,12 @@ class RAM(chainer.Chain):
 
         # loss with reinforce
         if train:
-            condition = chainer.Variable(
-                self.xp.where(
-                    self.xp.argmax(y.data,axis=1)==t.data, True, False),
-                volatile='auto')
-            zeros = chainer.Variable(
-                self.xp.zeros(bs, dtype=np.float32), volatile='auto')
-            ones = chainer.Variable(
-                self.xp.ones(bs, dtype=np.float32), volatile='auto')
-            r = F.where(condition, ones, zeros) # reward
+            r = self.xp.where(
+                self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
             if self.b is None:
-                self.b = F.sum(r).data / bs
-            self.b = 0.9*self.b + 0.1*F.sum(r).data/bs # bias: Ex[r]
-            self.loss += F.sum(log_pl * (r - self.b*ones)) / bs
+                self.b = self.xp.sum(r) / bs
+            self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias: Ex[r]
+            self.loss += F.sum(log_pl * (r - self.b)) / bs
         return self.loss
 
     def forward(self, h, x, l, train, action):
@@ -97,19 +89,19 @@ class RAM(chainer.Chain):
         # Location Net
         l = F.tanh(self.fc_hl(h))
 
-        if train:
-            # sampling l to get grad of location policy
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
-            s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
-            l = F.tanh(F.concat((s1,s2), axis=1))
+        # sampling l to get grad of location policy
+        l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+        s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
+        s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
+        l = F.tanh(F.concat((s1,s2), axis=1))
 
         if action:
             # Action Net
             y = self.fc_ha(h)
             if train:
                 # location policy
-                log_pl = 50 * ((s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2))
+                norm = (s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2)
+                log_pl = 0.5 * norm / self.var
                 log_pl = F.reshape(log_pl, (-1,))
                 return h, l, y, log_pl
             else:

@@ -22,7 +22,7 @@ class Crop(function.Function):
         xp = cuda.get_array_module(*x)
         n, c = x[0].shape[:2]
         y = xp.zeros((n,c,self.size,self.size), dtype=numpy.float32)
-        for k in range(x[0].shape[0]):
+        for k in range(n):
             y[k]= x[0][k,:,self.i1[k,0]:self.i2[k,0],self.i1[k,1]:self.i2[k,1]]
         return y,
 
