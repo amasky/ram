@@ -42,9 +42,10 @@ class RAM(chainer.Chain):
         l = chainer.Variable(
             self.xp.random.uniform(-1, 1, size=(bs,2)).astype(np.float32),
             volatile='auto')
-        self.ln_var = chainer.Variable(
-            self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(self.var),
-            volatile='auto')
+        if train:
+            self.ln_var = chainer.Variable(
+                self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(self.var),
+                volatile='auto')
 
         # forward n_step times
         for i in range(self.n_step - 1):
@@ -89,11 +90,12 @@ class RAM(chainer.Chain):
         # Location Net
         l = F.tanh(self.fc_hl(h))
 
-        # sampling l to get grad of location policy
-        l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-        s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
-        s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
-        l = F.tanh(F.concat((s1,s2), axis=1))
+        if train:
+            # sampling l to get grad of location policy
+            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+            s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
+            s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
+            l = F.tanh(F.concat((s1,s2), axis=1))
 
         if action:
             # Action Net
