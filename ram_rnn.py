@@ -24,7 +24,7 @@ class RAM(chainer.Chain):
         self.in_size = in_size
         self.g_size = g_size
         self.n_step = n_step
-        self.var = 0.001
+        self.var = 0.01
         self.b = None
 
     def clear(self):
@@ -44,13 +44,13 @@ class RAM(chainer.Chain):
             volatile='auto')
         if train:
             self.ln_var = chainer.Variable(
-                self.xp.ones(shape=(bs, 1), dtype=np.float32)*np.log(self.var),
+                self.xp.ones(shape=(bs,2), dtype=np.float32)*np.log(self.var),
                 volatile='auto')
 
         # forward n_step times
         for i in range(self.n_step - 1):
             h, l = self.forward(h, x, l, train, action=False)[:2]
-        h, l, y, log_pl = self.forward(h, x, l, train, action=True)
+        y, log_pl = self.forward(h, x, l, train, action=True)[2:]
 
         # loss with softmax cross entropy
         self.loss = F.softmax_cross_entropy(y, t)
@@ -64,6 +64,7 @@ class RAM(chainer.Chain):
                 self.b = self.xp.sum(r) / bs
             self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias: Ex[r]
             self.loss += F.sum(log_pl * (r - self.b)) / bs
+
         return self.loss
 
     def forward(self, h, x, l, train, action):
@@ -92,21 +93,23 @@ class RAM(chainer.Chain):
 
         if train:
             # sampling l to get grad of location policy
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            s1 = F.gaussian(mean=l1, ln_var=self.ln_var)
-            s2 = F.gaussian(mean=l2, ln_var=self.ln_var)
-            l = F.tanh(F.concat((s1,s2), axis=1))
+            s = F.gaussian(mean=l, ln_var=self.ln_var)
+            s = F.clip(s, -1., 1.)
+        else:
+            s = l
 
         if action:
             # Action Net
             y = self.fc_ha(h)
             if train:
                 # location policy
+                l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+                s1, s2 = F.split_axis(s, indices_or_sections=2, axis=1)
                 norm = (s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2)
                 log_pl = 0.5 * norm / self.var
                 log_pl = F.reshape(log_pl, (-1,))
-                return h, l, y, log_pl
+                return h, s, y, log_pl
             else:
-                return h, l, y, 0
+                return h, s, y, 0
         else:
-            return h, l, 0, 0
+            return h, s, 0, 0
