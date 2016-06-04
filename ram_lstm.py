@@ -63,7 +63,7 @@ class RAM(chainer.Chain):
             if self.b is None:
                 self.b = self.xp.sum(r) / bs
             self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias: Ex[r]
-            self.loss += F.sum(log_pl * (r - self.b)) / bs
+            self.loss += F.sum(log_pl * (r-self.b)) / bs
 
         return self.loss
 
@@ -105,7 +105,7 @@ class RAM(chainer.Chain):
                 # location policy
                 l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
                 s1, s2 = F.split_axis(s, indices_or_sections=2, axis=1)
-                norm = (s1 - l1)*(s1 - l1) + (s2 - l2)*(s2 - l2)
+                norm = (s1-l1)*(s1-l1) + (s2-l2)*(s2-l2)
                 log_pl = 0.5 * norm / self.var
                 log_pl = F.reshape(log_pl, (-1,))
                 return s, y, log_pl
