@@ -11,14 +11,14 @@ class RAM(chainer.Chain):
 
     def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8, n_step=6):
         super(RAM, self).__init__(
-            emb_l = L.Linear(2, n_e), # l: location
-            emb_x = L.Linear(g_size*g_size, n_e), # x: image
-            fc_lg = L.Linear(n_e, n_h), # l to g: glimpse
-            fc_xg = L.Linear(n_e, n_h), # x to g
+            emb_l = L.Linear(2, n_e), # embed location
+            emb_x = L.Linear(g_size*g_size, n_e), # embed image
+            fc_lg = L.Linear(n_e, n_h), # loc to glimpse
+            fc_xg = L.Linear(n_e, n_h), # image to glimpse
             core_hh = L.Linear(n_h, n_h), # core rnn
-            core_gh = L.Linear(n_h, n_h), # core rnn
-            fc_ha = L.Linear(n_h, 10), # h to a: action net
-            fc_hl = L.Linear(n_h, 2) # h to l
+            core_gh = L.Linear(n_h, n_h), # glimpse to core
+            fc_ha = L.Linear(n_h, 10), # core to action
+            fc_hl = L.Linear(n_h, 2) # core to loc
         )
         self.n_h = n_h
         self.in_size = in_size
@@ -47,7 +47,7 @@ class RAM(chainer.Chain):
                 self.xp.ones(shape=(bs,2), dtype=np.float32)*np.log(self.var),
                 volatile='auto')
 
-        # forward n_step times
+        # forward n_steps
         for i in range(self.n_step - 1):
             h, l = self.forward(h, x, l, train, action=False)[:2]
         y, log_pl = self.forward(h, x, l, train, action=True)[2:]
@@ -56,13 +56,13 @@ class RAM(chainer.Chain):
         self.loss = F.softmax_cross_entropy(y, t)
         self.accuracy = F.accuracy(y, t)
 
-        # loss with reinforce
+        # loss with reinforce rule
         if train:
             r = self.xp.where(
                 self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
             if self.b is None:
                 self.b = self.xp.sum(r) / bs
-            self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias: Ex[r]
+            self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias
             self.loss += F.sum(log_pl * (r-self.b)) / bs
 
         return self.loss
@@ -92,7 +92,7 @@ class RAM(chainer.Chain):
         l = F.tanh(self.fc_hl(h))
 
         if train:
-            # sampling l to get grad of location policy
+            # sampling location l
             s = F.gaussian(mean=l, ln_var=self.ln_var)
             s = F.clip(s, -1., 1.)
         else:
