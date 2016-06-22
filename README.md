@@ -22,7 +22,7 @@ Python(2 or 3), Chainer, scikit-learn, tqdm
 If you use a GPU, add the option "-g `deviceID`".
 
 ```shellsession
-➜ python train_wolstm.py -g -1  
+➜ python train_wolstm.py   
 ```
 
 ![loss and accuracy](figure/ram_wolstm_log.png)
