@@ -32,6 +32,12 @@ When you use LSTM units in core RNN layer, add the option "--lstm".
 ➜ python train.py -g 0 --lstm  
 ```
 
+After training, you can get predictions by the trained model.  
+
+```shellsession
+➜ python predict.py -m ram_wolstm.chainermodel  
+```
+
 ## Examples  
 Training the model without LSTM takes a day with CPU (reaches 96% accuracy)  
 ![loss and accuracy](figure/ram_wolstm_log.png)
