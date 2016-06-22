@@ -27,7 +27,7 @@ Training the model with LSTM takes ??? with CPU
 (still searching for the hyper-parameters to get the best accuracy in the paper...)
 
 ## Dependencies  
-Python(2 or 3), Chainer, scikit-learn, tqdm  
+Python(2 or 3), Chainer, scikit-learn, PIL, tqdm  
 
 ## Usage  
 
