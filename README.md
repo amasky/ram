@@ -1,1 +1,3 @@
 ## Reccurent Attention Model
+
+preparing...
