@@ -117,7 +117,7 @@ for epoch in range(start, n_epoch+start):
         model_filename = filename+'epoch{0:d}.chainermodel'.format(epoch+1)
         serializers.save_hdf5(model_filename, model)
 
-    if (epoch+1) == 000:
+    if (epoch+1) == 1000:
         optimizer.alpha *= 0.1
 
 log_test.close()
