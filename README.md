@@ -24,8 +24,9 @@ Python(2 or 3), Chainer, scikit-learn, tqdm
 ➜ python train.py   
 ```
 
-If you use a GPU, add the option "-g `deviceID`".
+If you use a GPU, add the option "-g `deviceID`".  
 When you use LSTM units in core RNN layer, add the option "--lstm".  
+(better performance but a little time consuming with LSTMs)  
 
 ```shellsession
 ➜ python train.py -g 0 --lstm  
