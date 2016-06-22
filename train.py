@@ -1,13 +1,13 @@
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('-g', metavar='GPUID', type=int, default=-1,
-                    help='GPU device ID (CPU if negative)')
-parser.add_argument('-o', metavar='filename', type=str,
-                    default='ram', help='prefix of output filenames')
-parser.add_argument('-b', metavar='batchsize', type=int, default=50,
-                    help='batch size while training')
-parser.add_argument('--lstm', action='store_true',
-                    default=False, help='Use LSTM units in core layer')
+parser.add_argument("-g", metavar="GPUID", type=int, default=-1,
+                    help="GPU device ID (CPU if negative)")
+parser.add_argument("-o", metavar="filename", type=str,
+                    default="ram", help="prefix of output filenames")
+parser.add_argument("-b", metavar="batchsize", type=int, default=50,
+                    help="batch size while training")
+parser.add_argument("--lstm", action="store_true",
+                    default=False, help="Use LSTM units in core layer")
 args = parser.parse_args()
 
 
@@ -15,8 +15,8 @@ import numpy as np
 np.random.seed(777)
 
 from sklearn.datasets import fetch_mldata
-print('preparing MNIST dataset...')
-mnist = fetch_mldata('MNIST original')
+print("preparing MNIST dataset...")
+mnist = fetch_mldata("MNIST original")
 mnist.data = mnist.data.astype(np.float32)
 mnist.data = mnist.data.reshape(mnist.data.shape[0], 1, 28, 28)
 mnist.target = mnist.target.astype(np.int32)
@@ -59,9 +59,9 @@ if gpuid >= 0:
 
 import csv
 filename = args.o
-log_test = open(filename+'_test.log', 'w')
-writer_test = csv.writer(log_test, lineterminator='\n')
-writer_test.writerow(('iter', 'loss', 'acc'))
+log_test = open(filename+"_test.log", "w")
+writer_test = csv.writer(log_test, lineterminator="\n")
+writer_test.writerow(("iter", "loss", "acc"))
 
 import sys
 from tqdm import tqdm
@@ -70,13 +70,13 @@ def test(x, t):
     batchsize = 1000
     sum_accuracy = sum_loss = 0
     with tqdm(total=len(t)) as pbar:
-        pbar.set_description('test')
+        pbar.set_description("test")
         for i in range(0, len(t), batchsize):
             pbar.update(batchsize)
             x_batch = chainer.Variable(
-                xp.asarray(x[i:i + batchsize].copy()), volatile='on')
+                xp.asarray(x[i:i + batchsize].copy()), volatile="on")
             t_batch = chainer.Variable(
-                xp.asarray(t[i:i + batchsize].copy()), volatile='on')
+                xp.asarray(t[i:i + batchsize].copy()), volatile="on")
             model(x_batch, t_batch, train=False)
             sum_loss += float(model.loss.data)
             sum_accuracy += float(model.accuracy.data)
@@ -96,12 +96,12 @@ n_data = len(train_targets)
 
 loss, acc = test(test_data, test_targets)
 writer_test.writerow((0, loss, acc))
-sys.stdout.write('test: loss={0:.6f}, accuracy={1:.6f}\n'.format(loss, acc))
+sys.stdout.write("test: loss={0:.6f}, accuracy={1:.6f}\n".format(loss, acc))
 sys.stdout.flush()
 
 # Learning loop
 for epoch in range(n_epoch):
-    sys.stdout.write('(epoch: {})\n'.format(epoch + 1))
+    sys.stdout.write("(epoch: {})\n".format(epoch + 1))
     sys.stdout.flush()
 
     # training
@@ -111,10 +111,10 @@ for epoch in range(n_epoch):
             it = epoch * n_data + i + batchsize
             x = chainer.Variable(
                 xp.asarray(train_data[perm[i:i + batchsize]].copy()),
-                volatile='off')
+                volatile="off")
             t = chainer.Variable(
                 xp.asarray(train_targets[perm[i:i + batchsize]].copy()),
-                volatile='off')
+                volatile="off")
             loss_func = model(x, t)
             loss_func.backward()
             loss_func.unchain_backward() # truncate
@@ -123,19 +123,19 @@ for epoch in range(n_epoch):
             loss = float(model.loss.data)
             acc = float(model.accuracy.data)
             pbar.set_description(
-                'train: loss={0:.6f}, acc={1:.3f}'.format(loss, acc))
+                "train: loss={0:.6f}, acc={1:.3f}".format(loss, acc))
             pbar.update(batchsize)
     sys.stderr.flush()
 
     # evaluate
     loss, acc = test(test_data, test_targets)
     writer_test.writerow((it, loss, acc))
-    sys.stdout.write('test: loss={0:.6f}, accuracy={1:.3f}\n'.format(loss, acc))
+    sys.stdout.write("test: loss={0:.6f}, accuracy={1:.3f}\n".format(loss, acc))
     sys.stdout.flush()
 
     # save model
     if (epoch+1) % 100 == 0:
-        model_filename = filename+'_epoch{0:d}.chainermodel'.format(epoch+1)
+        model_filename = filename+"_epoch{0:d}.chainermodel".format(epoch+1)
         serializers.save_hdf5(model_filename, model)
 
     if (epoch+1) == droplr_epoch:

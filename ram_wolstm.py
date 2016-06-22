@@ -82,6 +82,32 @@ class RAM(chainer.Chain):
 
         return self.loss
 
+    def predict(self, x, init_l):
+        self.clear()
+        bs = 1 # batch size
+
+        # init chainer.Variable
+        h = chainer.Variable(
+            self.xp.zeros(shape=(1,self.n_h), dtype=np.float32),
+            volatile="on")
+        l = chainer.Variable(
+            self.xp.asarray(init_l, dtype=np.float32).reshape(1,2),
+            volatile="on")
+
+        # forward n_steps times
+        locs = l.data
+        for i in range(self.n_step - 1):
+            h, l = self.forward(h, x, l, False, action=False)[:2]
+            locs = np.append(locs, l.data)
+        y = self.forward(h, x, l, False, action=True)[3]
+        y = self.xp.argmax(y.data,axis=1)[0]
+
+        if self.xp != np:
+            locs = self.xp.asnumpy(locs)
+            y = self.xp.asnumpy(y)
+
+        return y, locs.reshape(self.n_step, 2)
+
     def forward(self, h, x, l, train, action):
         if self.xp == np:
             loc = l.data
