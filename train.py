@@ -2,7 +2,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("-g", metavar="GPUID", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
-parser.add_argument("-o", metavar="filename", type=str,
+parser.add_argument("-o", metavar="outfilename", type=str,
                     default="ram", help="prefix of output filenames")
 parser.add_argument("-b", metavar="batchsize", type=int, default=50,
                     help="batch size while training")
@@ -108,12 +108,11 @@ for epoch in range(n_epoch):
     perm = np.random.permutation(n_data)
     with tqdm(total=n_data) as pbar:
         for i in range(0, n_data, batchsize):
-            it = epoch * n_data + i + batchsize
             x = chainer.Variable(
-                xp.asarray(train_data[perm[i:i + batchsize]].copy()),
+                xp.asarray(train_data[perm[i:i+batchsize]].copy()),
                 volatile="off")
             t = chainer.Variable(
-                xp.asarray(train_targets[perm[i:i + batchsize]].copy()),
+                xp.asarray(train_targets[perm[i:i+batchsize]].copy()),
                 volatile="off")
             loss_func = model(x, t)
             loss_func.backward()
@@ -123,14 +122,14 @@ for epoch in range(n_epoch):
             loss = float(model.loss.data)
             acc = float(model.accuracy.data)
             pbar.set_description(
-                "train: loss={0:.6f}, acc={1:.3f}".format(loss, acc))
+                "train: loss={0:.3f}, acc={1:.3f}".format(loss, acc))
             pbar.update(batchsize)
     sys.stderr.flush()
 
     # evaluate
     loss, acc = test(test_data, test_targets)
-    writer_test.writerow((it, loss, acc))
-    sys.stdout.write("test: loss={0:.6f}, accuracy={1:.3f}\n".format(loss, acc))
+    writer_test.writerow((epoch, loss, acc))
+    sys.stdout.write("test: loss={0:.3f}, accuracy={1:.3f}\n".format(loss, acc))
     sys.stdout.flush()
 
     # save model
