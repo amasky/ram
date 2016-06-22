@@ -2,7 +2,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', metavar='filename', type=str,
                     default='ram_lstm_', help='prefix of output filenames')
-parser.add_argument('-g', metavar='gpuid', type=int, default=0,
+parser.add_argument('-g', metavar='gpuid', type=int, default=-1,
                     help='GPU device ID (CPU if this negative)')
 args = parser.parse_args()
 
