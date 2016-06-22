@@ -1,6 +1,5 @@
 # Reccurent Attention Model
 
-## Reccurent Attention Model
 Reccurent Attention Model with Chainer based on the following paper  
 [arXiv:1406.6247](http://arxiv.org/abs/1406.6247): Recurrent Models of Visual Attention [Volodymyr Mnih+ 2014]  
 
@@ -14,7 +13,7 @@ Reccurent Attention Model with Chainer based on the following paper
 * visualize the locations model predicted  
 * multi-scale glimpse  
 * models to solve "Translated MNIST" task  
-* search for the better hyper-paramters  
+* search for the better hyper-parameters  
 
 ## Dependencies  
 Python(2 or 3), Chainer, scikit-learn, tqdm  
@@ -27,7 +26,7 @@ If you use a GPU, add the option "-g `deviceID`".
 ```
 
 ## Examples  
-Training the model without LSTM  
+Training the model without LSTM (takes a day with CPU)  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
 
