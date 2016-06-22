@@ -1,7 +1,17 @@
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-o', metavar='filename', type=str,
+                    default='ram_wolstm_', help='prefix of output filenames')
+parser.add_argument('-g', metavar='gpuid', type=int, default=0,
+                    help='GPU device ID (CPU if this negative)')
+args = parser.parse_args()
+
+
 import numpy as np
 np.random.seed(777)
 
 from sklearn.datasets import fetch_mldata
+print('preparing MNIST dataset...')
 mnist = fetch_mldata('MNIST original')
 mnist.data = mnist.data.astype(np.float32)
 mnist.data = mnist.data.reshape(mnist.data.shape[0], 1, 28, 28)
@@ -32,7 +42,7 @@ for param in model.params():
     data = param.data
     data[:] = np.random.uniform(-0.1, 0.1, data.shape)
 
-gpuid = 0 # gpu device ID (cpu if this negative)
+gpuid = args.g # gpu device ID (cpu if this negative)
 xp = cuda.cupy if gpuid >= 0 else np
 
 if gpuid >= 0:
@@ -41,7 +51,7 @@ if gpuid >= 0:
 
 
 import csv
-filename = '20160622_ram_rnn_'
+filename = args.o
 log_test = open(filename+'test.log', 'w')
 writer_test = csv.writer(log_test, lineterminator='\n')
 writer_test.writerow(('iter', 'loss', 'acc'))
