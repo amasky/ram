@@ -8,10 +8,10 @@ Reccurent Attention Model with Chainer based on the following paper
 * RAM model difinition file (Chainer)  
 * script for training the model  
 
-### not implemented yet  
+### not yet implemented  
 
 * visualize the locations which the model predicted  
-* hyper-params to get the best accuracy of the paper    
+* hyper-params to get the best accuracy in the paper    
 * multi-scale glimpse  
 * models to solve "Translated MNIST" task  
 
@@ -26,8 +26,8 @@ If you use a GPU, add the option "-g `deviceID`".
 ```
 
 ## Examples  
-Training the model without LSTM takes a day with CPU  
+Training the model without LSTM takes a day with CPU (reaches 96% accuracy)  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
 Training the model with LSTM takes ??? with CPU  
-(still searching for the hyper-parameters to get 98.71% accuracy on MNIST...)
+(still searching for the hyper-parameters to get the best accuracy in the paper...)
