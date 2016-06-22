@@ -14,6 +14,7 @@ Reccurent Attention Model with Chainer based on the following paper
 * visualize the locations model predicted  
 * multi-scale glimpse  
 * models to solve "Translated MNIST" task  
+* search for the better hyper-paramters  
 
 ## Dependencies  
 Python(2 or 3), Chainer, scikit-learn, tqdm  
@@ -25,6 +26,8 @@ If you use a GPU, add the option "-g `deviceID`".
 ➜ python train_wolstm.py   
 ```
 
+## Examples  
+loss and accuracy when training the model without LSTM  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
 
