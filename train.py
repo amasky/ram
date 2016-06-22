@@ -1,9 +1,13 @@
 import argparse
 parser = argparse.ArgumentParser()
+parser.add_argument('-g', metavar='GPUID', type=int, default=-1,
+                    help='GPU device ID (CPU if negative)')
 parser.add_argument('-o', metavar='filename', type=str,
-                    default='ram_lstm_', help='prefix of output filenames')
-parser.add_argument('-g', metavar='gpuid', type=int, default=-1,
-                    help='GPU device ID (CPU if this negative)')
+                    default='ram', help='prefix of output filenames')
+parser.add_argument('-b', metavar='batchsize', type=int, default=50,
+                    help='batch size while training')
+parser.add_argument('--lstm', action='store_true',
+                    default=False, help='Use LSTM units in core layer')
 args = parser.parse_args()
 
 
@@ -30,7 +34,10 @@ import chainer.links as L
 from chainer import optimizers
 from chainer import serializers
 
-from ram_lstm import RAM
+if args.lstm:
+    from ram_lstm import RAM
+else:
+    from ram_wolstm import RAM
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8, n_step=6)
 
 optimizer = chainer.optimizers.Adam(alpha=1e-4)
@@ -42,7 +49,7 @@ for param in model.params():
     data = param.data
     data[:] = np.random.uniform(-0.1, 0.1, data.shape)
 
-gpuid = args.g # gpu device ID (cpu if this negative)
+gpuid = args.g
 xp = cuda.cupy if gpuid >= 0 else np
 
 if gpuid >= 0:
@@ -52,10 +59,9 @@ if gpuid >= 0:
 
 import csv
 filename = args.o
-log_test = open(filename+'test.log', 'w')
+log_test = open(filename+'_test.log', 'w')
 writer_test = csv.writer(log_test, lineterminator='\n')
 writer_test.writerow(('iter', 'loss', 'acc'))
-
 
 import sys
 from tqdm import tqdm
@@ -78,9 +84,14 @@ def test(x, t):
     return sum_loss * batchsize / len(t), sum_accuracy * batchsize / len(t)
 
 
-start = 0
-n_epoch = 2000
-batchsize = 50
+if args.lstm:
+    n_epoch = 2000
+    droplr_epoch = 1000
+else:
+    n_epoch = 1000
+    droplr_epoch = 500
+
+batchsize = args.b
 n_data = len(train_targets)
 
 loss, acc = test(test_data, test_targets)
@@ -89,7 +100,7 @@ sys.stdout.write('test: loss={0:.6f}, accuracy={1:.6f}\n'.format(loss, acc))
 sys.stdout.flush()
 
 # Learning loop
-for epoch in range(start, n_epoch+start):
+for epoch in range(n_epoch):
     sys.stdout.write('(epoch: {})\n'.format(epoch + 1))
     sys.stdout.flush()
 
@@ -124,10 +135,10 @@ for epoch in range(start, n_epoch+start):
 
     # save model
     if (epoch+1) % 100 == 0:
-        model_filename = filename+'epoch{0:d}.chainermodel'.format(epoch+1)
+        model_filename = filename+'_epoch{0:d}.chainermodel'.format(epoch+1)
         serializers.save_hdf5(model_filename, model)
 
-    if (epoch+1) == 1000:
+    if (epoch+1) == droplr_epoch:
         optimizer.alpha *= 0.1
 
 log_test.close()
