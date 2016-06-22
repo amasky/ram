@@ -88,7 +88,7 @@ class RAM(chainer.Chain):
         # Location Encoding
         hl = F.relu(self.emb_l(l))
 
-        # Glimpose Net
+        # Glimpse Net
         g = F.relu(self.fc_lg(hl) + self.fc_xg(hx))
 
         # Core Net
