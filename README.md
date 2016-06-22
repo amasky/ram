@@ -9,11 +9,11 @@ Reccurent Attention Model with Chainer based on the following paper
 * RAM model difinition file (Chainer)  
 * script for training the model  
 
-not implemented yet  
+### not implemented yet  
 
-** visualize the locations model predicted  
-** multi-scale glimpse  
-** models to solve "Translated MNIST" task  
+* visualize the locations model predicted  
+* multi-scale glimpse  
+* models to solve "Translated MNIST" task  
 
 ## Dependencies  
 Python(2 or 3), Chainer, scikit-learn, tqdm  
