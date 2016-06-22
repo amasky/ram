@@ -30,7 +30,7 @@ import chainer.links as L
 from chainer import optimizers
 from chainer import serializers
 
-from ram import RAM
+from ram_wolstm import RAM
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8, n_step=6)
 
 optimizer = chainer.optimizers.Adam(alpha=1e-4)
