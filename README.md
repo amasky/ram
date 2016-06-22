@@ -27,7 +27,7 @@ If you use a GPU, add the option "-g `deviceID`".
 ```
 
 ## Examples  
-loss and accuracy when training the model without LSTM  
+Training the model without LSTM  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
 
