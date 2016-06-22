@@ -10,10 +10,10 @@ Reccurent Attention Model with Chainer based on the following paper
 
 ### not implemented yet  
 
-* visualize the locations model predicted  
+* visualize the locations which the model predicted  
+* hyper-params to get the best accuracy of the paper    
 * multi-scale glimpse  
 * models to solve "Translated MNIST" task  
-* search for the better hyper-parameters  
 
 ## Dependencies  
 Python(2 or 3), Chainer, scikit-learn, tqdm  
@@ -26,8 +26,8 @@ If you use a GPU, add the option "-g `deviceID`".
 ```
 
 ## Examples  
-Training the model without LSTM (takes a day with CPU)  
+Training the model without LSTM takes a day with CPU  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
-Training the model with LSTM (takes ??? with CPU)  
-still searching for the hyper-parameters to get 99% accuracy on MNIST...  
+Training the model with LSTM takes ??? with CPU  
+(still searching for the hyper-parameters to get 98.71% accuracy on MNIST...)
