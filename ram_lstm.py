@@ -23,11 +23,12 @@ class RAM(chainer.Chain):
         self.in_size = in_size
         self.g_size = g_size
         self.n_step = n_step
-        self.var = 0.01
+        self.var = 0.03
+        self.stddev = 0.173
         self.b = None
 
     def reset_state(self):
-        self.core_lstm.reset_state() # reset h
+        self.core_lstm.reset_state()
 
     def clear(self):
         self.loss = None
@@ -44,7 +45,7 @@ class RAM(chainer.Chain):
                 self.xp.ones(shape=(bs,2), dtype=np.float32)*np.log(self.var),
                     volatile=not train)
             l = chainer.Variable(
-                self.xp.random.uniform(-1, 1, size=(bs,2)).astype(np.float32),
+                self.xp.random.normal(0, self.stddev, size=(bs,2)).astype(np.float32),
                 volatile=not train)
         else:
             l = chainer.Variable(

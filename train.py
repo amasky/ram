@@ -41,7 +41,7 @@ if gpuid >= 0:
 
 
 import csv
-filename = '20160617_ram_rnn_'
+filename = '20160622_ram_rnn_'
 log_test = open(filename+'test.log', 'w')
 writer_test = csv.writer(log_test, lineterminator='\n')
 writer_test.writerow(('iter', 'loss', 'acc'))
@@ -69,7 +69,7 @@ def test(x, t):
 
 
 start = 0
-n_epoch = 2000
+n_epoch = 1000
 batchsize = 50
 n_data = len(train_targets)
 
@@ -117,7 +117,7 @@ for epoch in range(start, n_epoch+start):
         model_filename = filename+'epoch{0:d}.chainermodel'.format(epoch+1)
         serializers.save_hdf5(model_filename, model)
 
-    if (epoch+1) == 1000:
+    if (epoch+1) == 500:
         optimizer.alpha *= 0.1
 
 log_test.close()
