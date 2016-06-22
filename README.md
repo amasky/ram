@@ -19,6 +19,7 @@ Reccurent Attention Model with Chainer based on the following paper
 Python(2 or 3), Chainer, scikit-learn, tqdm  
 
 ## Usage  
+If you use a GPU, add the option "-g `deviceID`", or "-g -1" (case of CPU)  
 
 ```shellsession
 ➜ python train_wolstm.py -g -1  
