@@ -29,4 +29,5 @@ If you use a GPU, add the option "-g `deviceID`".
 Training the model without LSTM (takes a day with CPU)  
 ![loss and accuracy](figure/ram_wolstm_log.png)
 
-
+Training the model with LSTM (takes ??? with CPU)  
+still searching for the hyper-parameters to get 99% accuracy on MNIST...  
