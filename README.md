@@ -6,8 +6,8 @@ Reccurent Attention Model with Chainer based on the following paper
 ## Features  
 
 * RAM model difinition file (Chainer)  
-* script for training the model  
-* script for predict the class of digits  
+* script for training the model on MNIST  
+* script to run the model on MNIST  
 
 ### not yet implemented  
 
