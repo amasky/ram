@@ -19,10 +19,17 @@ Reccurent Attention Model with Chainer based on the following paper
 Python(2 or 3), Chainer, scikit-learn, tqdm  
 
 ## Usage  
-If you use a GPU, add the option "-g `deviceID`".
 
 ```shellsession
-➜ python train_wolstm.py   
+➜ python train.py   
+```
+
+If you use a GPU, add the option "-g `deviceID`".  
+When you use LSTM units in core RNN layer, add the option "--lstm".  
+(better performance but a little time consuming with LSTMs)  
+
+```shellsession
+➜ python train.py -g 0 --lstm  
 ```
 
 ## Examples  
