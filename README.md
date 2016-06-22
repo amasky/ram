@@ -5,7 +5,7 @@ Reccurent Attention Model with Chainer based on the following paper
 [arXiv:1406.6247](http://arxiv.org/abs/1406.6247): Recurrent Models of Visual Attention [Volodymyr Mnih+ 2014]  
 
 ## Dependencies  
-Python, Chainer, scikit-learn, tqdm  
+Python(2 or 3), Chainer, scikit-learn, tqdm  
 
 ## Usage  
 
