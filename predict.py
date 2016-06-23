@@ -1,8 +1,8 @@
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("-g", metavar="GPUID", type=int, default=-1,
+parser.add_argument("-g", "--gpu", metavar="gpuid", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
-parser.add_argument("-m", metavar="model", type=str,
+parser.add_argument("-m", "--model", metavar="model", type=str,
                     default="ram_wolstm.chainermodel",
                     help="chainer model filename")
 parser.add_argument("--lstm", action="store_true",

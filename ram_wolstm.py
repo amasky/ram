@@ -31,11 +31,11 @@ class RAM(chainer.Chain):
     def clear(self):
         self.loss = None
         self.accuracy = None
-        self.sum_ln_p = None
 
     def __call__(self, x, t, train=True):
         self.clear()
         bs = x.data.shape[0] # batch size
+        accum_ln_p = 0
 
         # init chainer.Variable
         h = chainer.Variable(
@@ -60,14 +60,9 @@ class RAM(chainer.Chain):
         for i in range(self.n_step - 1):
             h, l, ln_p = self.forward(h, x, l, train, action=False)[:3]
             if train:
-                if self.sum_ln_p is None:
-                    self.sum_ln_p = ln_p
-                else:
-                    self.sum_ln_p += ln_p
+                accum_ln_p += ln_p
 
-        ln_p, y = self.forward(h, x, l, train, action=True)[2:]
-        if train:
-            self.sum_ln_p += ln_p
+        y = self.forward(h, x, l, train, action=True)[3]
 
         # loss with softmax cross entropy
         self.loss = F.softmax_cross_entropy(y, t)
@@ -78,7 +73,7 @@ class RAM(chainer.Chain):
             r = self.xp.where(
                 self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
             self.b = 0.9*self.b + 0.1*self.xp.sum(r)/bs # bias
-            self.loss += F.sum(self.sum_ln_p * (r-self.b)) / bs
+            self.loss += F.sum(accum_ln_p * (r-self.b)) / bs
 
         return self.loss
 

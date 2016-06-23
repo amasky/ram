@@ -1,11 +1,11 @@
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("-g", metavar="GPUID", type=int, default=-1,
+parser.add_argument("-g", "--gpu", metavar="gpuid", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
-parser.add_argument("-o", metavar="outfilename", type=str,
+parser.add_argument("-o", "--out", metavar="outfilename", type=str,
                     default="ram", help="prefix of output filenames")
-parser.add_argument("-b", metavar="batchsize", type=int, default=50,
-                    help="batch size while training")
+parser.add_argument("-b", "--batchsize", metavar="batchsize", type=int,
+                    default=50, help="batch size while training")
 parser.add_argument("--lstm", action="store_true",
                     default=False, help="Use LSTM units in core layer")
 args = parser.parse_args()
@@ -49,7 +49,7 @@ for param in model.params():
     data = param.data
     data[:] = np.random.uniform(-0.1, 0.1, data.shape)
 
-gpuid = args.g
+gpuid = args.gpu
 xp = cuda.cupy if gpuid >= 0 else np
 
 if gpuid >= 0:
@@ -58,7 +58,7 @@ if gpuid >= 0:
 
 
 import csv
-filename = args.o
+filename = args.out
 log_test = open(filename+"_test.log", "w")
 writer_test = csv.writer(log_test, lineterminator="\n")
 writer_test.writerow(("iter", "loss", "acc"))
@@ -91,7 +91,7 @@ else:
     n_epoch = 1000
     droplr_epoch = 500
 
-batchsize = args.b
+batchsize = args.batchsize
 n_data = len(train_targets)
 
 loss, acc = test(test_data, test_targets)
