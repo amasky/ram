@@ -48,6 +48,12 @@ model.zerograds()
 for param in model.params():
     data = param.data
     data[:] = np.random.uniform(-0.1, 0.1, data.shape)
+if not args.lstm:
+    data = model.core_hh.W.data
+    data[:] = np.identity(data.shape[0], dtype=np.float32)
+    data = model.core_hh.b.data
+    data[:] = np.zeros(data.shape[0], dtype=np.float32)
+
 
 gpuid = args.gpu
 xp = cuda.cupy if gpuid >= 0 else np
