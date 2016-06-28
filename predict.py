@@ -38,9 +38,9 @@ in_size = 28
 g_size = 8
 n_step = 6
 model = RAM(n_e=128, n_h=256, in_size=in_size, g_size=g_size, n_step=n_step)
-serializers.load_hdf5(args.m, model)
+serializers.load_hdf5(args.model, model)
 
-gpuid = args.g
+gpuid = args.gpu
 xp = cuda.cupy if gpuid >= 0 else np
 if gpuid >= 0:
     cuda.get_device(gpuid).use()
@@ -60,7 +60,6 @@ if y == test_targets[index]:
     color = (0, 255, 0)
 else:
     color = (255, 0, 0)
-
 
 # loc in real values to index
 margin = g_size/2
