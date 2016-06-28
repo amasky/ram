@@ -5,13 +5,13 @@ Reccurent Attention Model with Chainer based on the following paper
 
 ## Features  
 
-* RAM model difinition file (Chainer)  
-* script for training the model on MNIST  
+* RAM model difinition file  
+* script to train the model on MNIST  
 * script to run the model on MNIST  
 
 ### not yet implemented  
 
-* hyper-params to get the best accuracy in the paper    
+* hyper-parameters to get the best accuracy in the paper  
 * multi-scale glimpse  
 * models to solve "Translated MNIST" task  
 
