@@ -45,15 +45,12 @@ optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
 optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
 model.zerograds()
-for param in model.params():
-    data = param.data
-    data[:] = np.random.uniform(-0.1, 0.1, data.shape)
+'''
 if not args.lstm:
     data = model.core_hh.W.data
     data[:] = np.identity(data.shape[0], dtype=np.float32)
-    data = model.core_hh.b.data
-    data[:] = np.zeros(data.shape[0], dtype=np.float32)
-
+    print(model.core_hh.W.data[:])
+'''
 
 gpuid = args.gpu
 xp = cuda.cupy if gpuid >= 0 else np
