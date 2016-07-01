@@ -71,6 +71,7 @@ locs -= g_size//2
 # plot results
 import matplotlib.pyplot as plt
 plt.style.use("ggplot")
+plt.figure(figsize=(8, 1.5))
 import PIL
 from PIL import ImageDraw
 image = PIL.Image.fromarray(test_data[index][0]*255).convert('RGB')
@@ -86,3 +87,4 @@ for i in range(0, n_step):
     plt.axis("off")
     plt.title("t="+str(i+1))
 plt.show()
+plt.savefig("result.png")

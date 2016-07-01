@@ -10,10 +10,10 @@ parser.add_argument("-g", "--gpu", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
-parser.add_argument("-e", "--epoch", type=int, default=200,
+parser.add_argument("-e", "--epoch", type=int, default=500,
                     help="iterate training given epoch times")
-parser.add_argument("-f", "--filename", type=str,
-                    default="ram", help="prefix of output filenames")
+parser.add_argument("-f", "--filename", type=str, default="ram",
+                    help="prefix of output filenames")
 args = parser.parse_args()
 
 
@@ -21,7 +21,7 @@ import numpy as np
 np.random.seed(777)
 
 from sklearn.datasets import fetch_mldata
-print("Preparing MNIST dataset...")
+print("preparing MNIST dataset...")
 mnist = fetch_mldata("MNIST original")
 mnist.data = mnist.data.astype(np.float32)
 mnist.data = mnist.data.reshape(mnist.data.shape[0], 1, 28, 28)
@@ -46,17 +46,13 @@ else:
     from ram_wolstm import RAM
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8, n_step=6)
 
-#optimizer = chainer.optimizers.Adam(alpha=1e-3)
 optimizer = chainer.optimizers.MomentumSGD(lr=1e-2)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
 optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
 model.zerograds()
 
-if args.lstm:
-    data = model.core_lstm.lateral.W.data
-    data[:] = np.identity(data.shape[0], dtype=np.float32)
-else:
+if not args.lstm:
     data = model.core_hh.W.data
     data[:] = np.identity(data.shape[0], dtype=np.float32)
 
@@ -74,9 +70,10 @@ if gpuid >= 0:
 
 import csv
 filename = args.filename
-log_test = open(filename+"_test.log", "w")
-writer_test = csv.writer(log_test, lineterminator="\n")
-writer_test.writerow(("iter", "loss", "acc"))
+log = open(filename+"_test.log", "w")
+writer = csv.writer(log, lineterminator="\n")
+writer.writerow(("iter", "loss", "acc", "lr"))
+log.flush()
 
 import sys
 from tqdm import tqdm
@@ -98,24 +95,26 @@ def test(x, t):
     sys.stderr.flush()
     return sum_loss * batchsize / len(t), sum_accuracy * batchsize / len(t)
 
-
-batchsize = args.batchsize
-n_data = len(train_targets)
-n_epoch = args.epoch
-
 loss, acc = test(test_data, test_targets)
-writer_test.writerow((0, loss, acc))
+writer.writerow((0, loss, acc, optimizer.lr))
+log.flush()
 sys.stdout.write("test: loss={0:.6f}, accuracy={1:.6f}\n".format(loss, acc))
 sys.stdout.flush()
 
+
 # Learning loop
+batchsize = args.batchsize
+n_data = len(train_targets)
+n_epoch = args.epoch
+lr_gamma = np.exp(-3*np.log(10)/n_epoch)
+print("going to train {} epoch".format(n_epoch))
+
 start = args.resume
 for epoch in range(start, start+n_epoch):
     sys.stdout.write("(epoch: {})\n".format(epoch + 1))
     sys.stdout.flush()
 
-    # training
-    optimizer.lr = 1e-2 * (1 - epoch/n_epoch)
+    optimizer.lr = 1e-2 * np.power(lr_gamma, epoch)
     print("leaning rate={}".format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
@@ -141,13 +140,14 @@ for epoch in range(start, start+n_epoch):
 
     # evaluate
     loss, acc = test(test_data, test_targets)
-    writer_test.writerow((epoch, loss, acc))
+    writer.writerow((epoch+1, loss, acc, optimizer.lr))
+    log.flush()
     sys.stdout.write("test: loss={0:.3f}, accuracy={1:.3f}\n".format(loss, acc))
     sys.stdout.flush()
 
     # save model
-    if (epoch+1) % 10 == 0:
+    if (epoch+1) % 100 == 0:
         model_filename = filename+"_epoch{0:d}.chainermodel".format(epoch+1)
         serializers.save_hdf5(model_filename, model)
 
-log_test.close()
+log.close()

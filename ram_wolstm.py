@@ -136,6 +136,7 @@ class RAM(chainer.Chain):
     def predict(self, x, init_l):
         self.clear()
         bs = 1 # batch size
+        train = False
 
         # init internal state of core RNN h
         h = chainer.Variable(
@@ -144,11 +145,11 @@ class RAM(chainer.Chain):
 
         # init mean location
         m = chainer.Variable(
-            self.xp.asarray(init_l.reshape(bs,2)).astype(np.float32),
+            self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
-        locs = np.array([]).reshape(0, 2)
+        locs = np.array([0, 0]).reshape(1, 2)
         for i in range(self.n_step - 1):
             h, m = self.forward(h, x, m, False, action=False)[:2]
             locs = np.vstack([locs, m.data[0]])

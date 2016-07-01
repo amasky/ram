@@ -15,7 +15,7 @@ class RAM(chainer.Chain):
             emb_x = L.Linear(g_size*g_size, n_e), # embed image
             fc_lg = L.Linear(n_e, n_h), # loc to glimpse
             fc_xg = L.Linear(n_e, n_h), # image to glimpse
-            core_lstm = L.Linear(n_h, n_h), # core LSTM
+            core_lstm = L.LSTM(n_h, n_h), # core LSTM
             fc_ha = L.Linear(n_h, 10), # core to action
             fc_hl = L.Linear(n_h, 2), # core to loc
             fc_hb = L.Linear(n_h, 1), # core to baseline
@@ -30,6 +30,7 @@ class RAM(chainer.Chain):
     def clear(self):
         self.loss = None
         self.accuracy = None
+        self.core_lstm.reset_state()
 
     def __call__(self, x, t, train=True):
         self.clear()
@@ -135,14 +136,15 @@ class RAM(chainer.Chain):
     def predict(self, x, init_l):
         self.clear()
         bs = 1 # batch size
+        train = False
 
         # init mean location
         m = chainer.Variable(
-            self.xp.asarray(init_l.reshape(bs,2)).astype(np.float32),
+            self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
-        locs = np.array([]).reshape(0, 2)
+        locs = np.array([0, 0]).reshape(1, 2)
         for i in range(self.n_step - 1):
             m = self.forward(h, x, m, False, action=False)[0]
             locs = np.vstack([locs, m.data[0]])
