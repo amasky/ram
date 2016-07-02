@@ -1,38 +1,40 @@
-import numpy
-
+import numpy as np
 from chainer import cuda
 from chainer import function
-from chainer.utils import type_check
 
 class Crop(function.Function):
 
     def __init__(self, loc, size):
         self.size = size
-        self.i1 = loc - self.size//2
-        self.i2 = self.i1 + self.size
-
-    def check_type_forward(self, in_types):
-        type_check.expect(
-            in_types.size() == 1,
-            in_types[0].dtype == numpy.float32,
-            in_types[0].ndim == 4
-        )
+        self.pad = size // 2
+        self.loc = loc
 
     def forward(self, x):
         xp = cuda.get_array_module(*x)
-        n, c = x[0].shape[:2]
-        y = xp.zeros((n,c,self.size,self.size), dtype=numpy.float32)
+        n, c, w_i = x[0].shape[:3]
+
+        p = self.pad
+        x_p = xp.zeros(shape=(n,c,w_i+2*p,w_i+2*p), dtype=np.float32)
+        x_p[:,:,p:p+w_i,p:p+w_i] = x[0]
+
+        loc = (self.loc+1)*0.5*(w_i+1)
+        loc = np.clip(loc, 0, w_i)
+        loc = np.floor(loc).astype(np.int32)
+        loc += p
+
+        w_o = self.size
+        y = xp.zeros(shape=(n,c,w_o,w_o), dtype=np.float32)
+        m = (w_o+1) // 2
         for k in range(n):
-            y[k]= x[0][k,:,self.i1[k,0]:self.i2[k,0],self.i1[k,1]:self.i2[k,1]]
+            y[k] = x_p[k,:,loc[k,0]-m:loc[k,0]+m,loc[k,1]-m:loc[k,1]+m]
         return y,
 
+    # do not backward (always return 0)
     def backward(self, x, gy):
         xp = cuda.get_array_module(*x)
         n, c = gy[0].shape[:2]
-        h, w = x[0].shape[2:]
-        gx = xp.zeros((n,c,h,w), dtype=numpy.float32)
-        for k in range(n):
-            gx[k,:,self.i1[k,0]:self.i2[k,0],self.i1[k,1]:self.i2[k,1]] = gy[0][k]
+        w_i = x[0].shape[2]
+        gx = xp.zeros(shape=(n,c,w_i,w_i), dtype=np.float32)
         return gx,
 
 def crop(x, loc, size):
