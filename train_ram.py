@@ -2,8 +2,6 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--lstm", action="store_true",
                     default=False, help="use LSTM units in core layer")
-parser.add_argument("-r", "--resume", type=int, default=0,
-                    help="resume training from given epoch")
 parser.add_argument("-m", "--initmodel", type=str, default="",
                     help="load model from given file")
 parser.add_argument("-g", "--gpu", type=int, default=-1,
@@ -21,7 +19,7 @@ import numpy as np
 np.random.seed(777)
 
 from sklearn.datasets import fetch_mldata
-print("preparing MNIST dataset...")
+print("preparing dataset...")
 mnist = fetch_mldata("MNIST original")
 mnist.data = mnist.data.astype(np.float32)
 mnist.data = mnist.data.reshape(mnist.data.shape[0], 1, 28, 28)
@@ -46,7 +44,8 @@ else:
     from ram_wolstm import RAM
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8, n_step=6)
 
-optimizer = chainer.optimizers.MomentumSGD(lr=1e-2)
+lr_base = 1e-2
+optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
 optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
@@ -57,7 +56,7 @@ if not args.lstm:
     data[:] = np.identity(data.shape[0], dtype=np.float32)
 
 if args.initmodel:
-    print("Load model from {}".format(args.initmodel))
+    print("load model from {}".format(args.initmodel))
     serializers.load_hdf5(args.initmodel, model)
 
 gpuid = args.gpu
@@ -109,12 +108,11 @@ n_epoch = args.epoch
 lr_gamma = np.exp(-3*np.log(10)/n_epoch)
 print("going to train {} epoch".format(n_epoch))
 
-start = args.resume
-for epoch in range(start, start+n_epoch):
+for epoch in range(n_epoch):
     sys.stdout.write("(epoch: {})\n".format(epoch + 1))
     sys.stdout.flush()
 
-    optimizer.lr = 1e-2 * np.power(lr_gamma, epoch)
+    optimizer.lr = lr_base * np.power(lr_gamma, epoch)
     print("leaning rate={}".format(optimizer.lr))
 
     perm = np.random.permutation(n_data)

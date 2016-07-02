@@ -3,10 +3,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-g", "--gpu", metavar="gpuid", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-m", "--model", metavar="model", type=str,
-                    default="ram_wolstm.chainermodel",
-                    help="chainer model filename")
+                    default="ram.chainermodel", help="chainer model filename")
 parser.add_argument("--lstm", action="store_true",
-                    default=False, help="Use LSTM units in core layer")
+                    default=False, help="use LSTM units in core layer")
 args = parser.parse_args()
 
 
@@ -72,6 +71,7 @@ locs -= g_size//2
 import matplotlib.pyplot as plt
 plt.style.use("ggplot")
 plt.figure(figsize=(8, 1.5))
+
 import PIL
 from PIL import ImageDraw
 image = PIL.Image.fromarray(test_data[index][0]*255).convert('RGB')
@@ -86,5 +86,5 @@ for i in range(0, n_step):
     plt.imshow(img_i, interpolation="none")
     plt.axis("off")
     plt.title("t="+str(i+1))
+
 plt.show()
-plt.savefig("result.png")

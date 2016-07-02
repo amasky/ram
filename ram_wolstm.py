@@ -9,10 +9,11 @@ from crop import crop
 
 class RAM(chainer.Chain):
 
-    def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8, n_step=6):
+    def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8,
+                n_step=6, scale=1):
         super(RAM, self).__init__(
             emb_l = L.Linear(2, n_e), # embed location
-            emb_x = L.Linear(g_size*g_size, n_e), # embed image
+            emb_x = L.Linear(g_size*g_size*scale, n_e), # embed image
             fc_lg = L.Linear(n_e, n_h), # loc to glimpse
             fc_xg = L.Linear(n_e, n_h), # image to glimpse
             core_hh = L.Linear(n_h, n_h), # core rnn
@@ -25,8 +26,8 @@ class RAM(chainer.Chain):
         self.in_size = in_size
         self.g_size = g_size
         self.n_step = n_step
+        self.scale = scale
         self.var = 0.03
-        self.stddev = 0.173
 
     def clear(self):
         self.loss = None
@@ -91,18 +92,17 @@ class RAM(chainer.Chain):
         else:
             l = m
 
-        # real-valued coordinates to indices
+        # Retina Encoding
         if self.xp == np:
             loc = l.data
         else:
             loc = self.xp.asnumpy(l.data)
-        margin = self.g_size/2
-        loc = (loc+1)*0.5*(self.in_size-self.g_size+1) + margin
-        loc = np.clip(loc, margin, self.in_size-margin)
-        loc = np.floor(loc).astype(np.int32)
-
-        # Retina Encoding
         hg = crop(x, loc=loc, size=self.g_size)
+        for k in range(1, self.scale):
+            s = np.power(2,k)
+            patch = crop(x, loc=loc, size=self.g_size*s)
+            patch = F.average_pooling_2d(patch, ksize=s)
+            hg = F.concat((hg, patch), axis=1)
         hg = F.relu(self.emb_x(hg))
 
         # Location Encoding
