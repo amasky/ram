@@ -26,7 +26,7 @@ class RAM(chainer.Chain):
         self.g_size = g_size
         self.n_step = n_step
         self.scale = scale
-        self.var = 0.03
+        self.var = 0.01
 
     def clear(self):
         self.loss = None
@@ -37,11 +37,6 @@ class RAM(chainer.Chain):
         self.clear()
         bs = x.data.shape[0] # batch size
         accum_ln_p = 0
-
-        # init internal state of core RNN h
-        h = chainer.Variable(
-            self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
-            volatile=not train)
 
         # init mean location
         m = chainer.Variable(

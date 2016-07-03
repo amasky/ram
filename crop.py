@@ -6,7 +6,7 @@ class Crop(function.Function):
 
     def __init__(self, loc, size):
         self.size = size
-        self.pad = size // 2
+        self.pad = (size+1) // 2
         self.loc = loc
 
     def forward(self, x):
@@ -24,9 +24,8 @@ class Crop(function.Function):
 
         w_o = self.size
         y = xp.zeros(shape=(n,c,w_o,w_o), dtype=np.float32)
-        m = (w_o+1) // 2
         for k in range(n):
-            y[k] = x_p[k,:,loc[k,0]-m:loc[k,0]+m,loc[k,1]-m:loc[k,1]+m]
+            y[k] = x_p[k,:,loc[k,0]-p:loc[k,0]+p,loc[k,1]-p:loc[k,1]+p]
         return y,
 
     # do not backward (always return 0)

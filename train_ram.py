@@ -105,7 +105,7 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-3*np.log(10)/n_epoch)
+lr_gamma = np.exp(-2*np.log(10)/n_epoch)
 print("going to train {} epoch".format(n_epoch))
 
 for epoch in range(n_epoch):
