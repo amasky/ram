@@ -27,7 +27,7 @@ class RAM(chainer.Chain):
         self.g_size = g_size
         self.n_step = n_step
         self.scale = scale
-        self.var = 0.01
+        self.var = 0.03
 
     def clear(self):
         self.loss = None

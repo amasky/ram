@@ -26,7 +26,7 @@ class RAM(chainer.Chain):
         self.g_size = g_size
         self.n_step = n_step
         self.scale = scale
-        self.var = 0.01
+        self.var = 0.03
 
     def clear(self):
         self.loss = None
@@ -107,7 +107,7 @@ class RAM(chainer.Chain):
         g = F.relu(self.fc_lg(hl) + self.fc_xg(hg))
 
         # Core Net
-        h = F.relu(self.core_lstm(g))
+        h = self.core_lstm(g)
 
         # Location Net
         m = F.tanh(self.fc_hl(h))
