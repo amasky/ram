@@ -8,6 +8,8 @@ parser.add_argument("-g", "--gpu", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
+parser.add_argument("-v", "--variance", type=float, default=0.03,
+                    help="variance of the location policy")
 parser.add_argument("-e", "--epoch", type=int, default=500,
                     help="iterate training given epoch times")
 parser.add_argument("-f", "--filename", type=str, default="ram",
@@ -42,7 +44,8 @@ if args.lstm:
     from ram_lstm import RAM
 else:
     from ram_wolstm import RAM
-model = RAM(n_e=128, n_h=256, in_size=28, g_size=8, n_step=6)
+model = RAM(n_e=128, n_h=256, in_size=28, g_size=8,
+            n_step=6, scale=1, variance=args.variance)
 
 lr_base = 1e-2
 optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
