@@ -43,8 +43,8 @@ class RAM(chainer.Chain):
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile=not train)
 
-        # init mean location
-        m = chainer.Variable(
+        # init location l
+        l = chainer.Variable(
             self.xp.random.uniform(-1,1,size=(bs,2)).astype(np.float32),
             volatile=not train)
 
@@ -56,11 +56,11 @@ class RAM(chainer.Chain):
 
         # forward n_steps times
         for i in range(self.n_step - 1):
-            h, m, ln_p = self.forward(h, x, m, train, action=False)[:3]
+            h, l, ln_p = self.forward(h, x, l, train, action=False)[:3]
             if train:
                 accum_ln_p += ln_p
 
-        y, b = self.forward(h, x, m, train, action=True)[3:5]
+        y, b = self.forward(h, x, l, train, action=True)[3:5]
         if train:
             accum_ln_p += ln_p
 
@@ -68,39 +68,23 @@ class RAM(chainer.Chain):
         self.loss = F.softmax_cross_entropy(y, t)
         self.accuracy = F.accuracy(y, t)
 
-        # loss with reinforce rule
         if train:
+            # reward
             r = self.xp.where(
                 self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
+            # MSE between reward and baseline
             self.loss += F.sum((r-b) * (r-b)) / bs
+            # loss with reinforce rule
             self.loss += F.sum(accum_ln_p * (r-b)) / bs
 
         return self.loss
 
-    def forward(self, h, x, m, train, action):
-        if train:
-            # sampling l
-            l = F.gaussian(mean=m, ln_var=self.ln_var)
-            l = F.clip(l, -1., 1.)
-
-            # get location policy
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            norm = (l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)
-            ln_p = 0.5 * norm / self.var
-            ln_p = F.reshape(ln_p, (-1,))
-        else:
-            l = m
-
+    def forward(self, h, x, l, train, action):
         # Retina Encoding
-        if self.xp == np:
-            loc = l.data
-        else:
-            loc = self.xp.asnumpy(l.data)
-        hg = crop(x, loc=loc, size=self.g_size)
+        hg = crop(x, loc=l.data, size=self.g_size)
         for k in range(1, self.scale):
             s = np.power(2,k)
-            patch = crop(x, loc=loc, size=self.g_size*s)
+            patch = crop(x, loc=l.data, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
             hg = F.concat((hg, patch), axis=1)
         hg = F.relu(self.emb_x(hg))
@@ -117,6 +101,20 @@ class RAM(chainer.Chain):
         # Location Net
         m = F.tanh(self.fc_hl(h))
 
+        if train:
+            # generate sample from N(mean,var)
+            l = F.gaussian(mean=m, ln_var=self.ln_var)
+            l = F.clip(l, -1., 1.)
+
+            # get location policy
+            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
+            # -ln(location policy)
+            ln_p = 0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
+            ln_p = F.reshape(ln_p, (-1,))
+        else:
+            l = m
+
         if action:
             # Action Net
             y = self.fc_ha(h)
@@ -124,36 +122,34 @@ class RAM(chainer.Chain):
             b = F.reshape(b, (-1,))
 
             if train:
-                return h, m, ln_p, y, b
+                return h, l, ln_p, y, b
             else:
-                return h, m, None, y, None
+                return h, l, None, y, None
         else:
             if train:
-                return h, m, ln_p, None, None
+                return h, l, ln_p, None, None
             else:
-                return h, m, None, None, None
+                return h, l, None, None, None
 
     def predict(self, x, init_l):
         self.clear()
         bs = 1 # batch size
         train = False
 
-        # init internal state of core RNN h
         h = chainer.Variable(
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile=not train)
 
-        # init mean location
-        m = chainer.Variable(
+        l = chainer.Variable(
             self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
-        locs = np.array([0, 0]).reshape(1, 2)
+        locs = np.array(init_l).reshape(1, 2)
         for i in range(self.n_step - 1):
-            h, m = self.forward(h, x, m, False, action=False)[:2]
-            locs = np.vstack([locs, m.data[0]])
-        y = self.forward(h, x, m, False, action=True)[3]
+            h, l = self.forward(h, x, l, False, action=False)[:2]
+            locs = np.vstack([locs, l.data[0]])
+        y = self.forward(h, x, l, False, action=True)[3]
         y = self.xp.argmax(y.data,axis=1)[0]
 
         if self.xp != np:
