@@ -88,3 +88,4 @@ for i in range(0, n_step):
     plt.title("t="+str(i+1))
 
 plt.show()
+plt.savefig("__result.png")

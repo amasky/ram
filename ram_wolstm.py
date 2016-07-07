@@ -45,7 +45,7 @@ class RAM(chainer.Chain):
 
         # init mean location
         m = chainer.Variable(
-            self.xp.zeros(shape=(bs,2), dtype=np.float32),
+            self.xp.random.uniform(-1,1,size=(bs,2)).astype(np.float32),
             volatile=not train)
 
         if train:

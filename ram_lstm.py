@@ -40,7 +40,7 @@ class RAM(chainer.Chain):
 
         # init mean location
         m = chainer.Variable(
-            self.xp.zeros(shape=(bs,2), dtype=np.float32),
+            self.xp.random.uniform(-1,1,size=(bs,2)).astype(np.float32),
             volatile=not train)
 
         if train:
@@ -141,9 +141,9 @@ class RAM(chainer.Chain):
         # forward n_steps times
         locs = np.array([0, 0]).reshape(1, 2)
         for i in range(self.n_step - 1):
-            m = self.forward(h, x, m, False, action=False)[0]
+            m = self.forward(x, m, False, action=False)[0]
             locs = np.vstack([locs, m.data[0]])
-        y = self.forward(h, x, m, False, action=True)[2]
+        y = self.forward(x, m, False, action=True)[2]
         y = self.xp.argmax(y.data,axis=1)[0]
 
         if self.xp != np:
