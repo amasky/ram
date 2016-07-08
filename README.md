@@ -40,5 +40,5 @@ When you use LSTM units in core RNN layer, add the option "--lstm".
 After training, you can get predictions by the trained model.  
 
 ```shellsession
-➜ python predict.py -m ram_wolstm.chainermodel  
+➜ python predict.py -m ram.chainermodel  
 ```
