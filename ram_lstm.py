@@ -10,7 +10,7 @@ from crop import crop
 class RAM(chainer.Chain):
 
     def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8,
-                n_step=6, scale=1, variance=0.03):
+                n_step=6, scale=1, variance=0.3):
         super(RAM, self).__init__(
             emb_l = L.Linear(2, n_e), # embed location
             emb_x = L.Linear(g_size*g_size*scale, n_e), # embed image
@@ -37,11 +37,6 @@ class RAM(chainer.Chain):
         self.clear()
         bs = x.data.shape[0] # batch size
         accum_ln_p = 0
-
-        # init internal state of core RNN h
-        h = chainer.Variable(
-            self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
-            volatile=not train)
 
         # init location l
         l = chainer.Variable(
@@ -86,6 +81,7 @@ class RAM(chainer.Chain):
         else:
             loc = self.xp.asnumpy(l.data)
         hg = crop(x, loc=loc, size=self.g_size)
+        # multi-scale glimpse
         for k in range(1, self.scale):
             s = np.power(2,k)
             patch = crop(x, loc=loc, size=self.g_size*s)
@@ -110,10 +106,9 @@ class RAM(chainer.Chain):
             l = F.gaussian(mean=m, ln_var=self.ln_var)
             l = F.clip(l, -1., 1.)
 
-            # get location policy
+            # get -ln(location policy)
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
             m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            # -ln(location policy)
             ln_p = 0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
             ln_p = F.reshape(ln_p, (-1,))
         else:
