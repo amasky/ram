@@ -10,7 +10,7 @@ from crop import crop
 class RAM(chainer.Chain):
 
     def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8,
-                n_step=6, scale=1, variance=0.3):
+                n_step=6, scale=1, variance=0.05):
         super(RAM, self).__init__(
             emb_l = L.Linear(2, n_e), # embed location
             emb_x = L.Linear(g_size*g_size*scale, n_e), # embed image
@@ -43,8 +43,8 @@ class RAM(chainer.Chain):
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile=not train)
 
-        # init location l
-        l = chainer.Variable(
+        # init mean location
+        m = chainer.Variable(
             self.xp.random.uniform(-1,1,size=(bs,2)).astype(np.float32),
             volatile=not train)
 
@@ -56,11 +56,11 @@ class RAM(chainer.Chain):
 
         # forward n_steps times
         for i in range(self.n_step - 1):
-            h, l, ln_p = self.forward(h, x, l, train, action=False)[:3]
+            h, m, ln_p = self.forward(h, x, m, train, action=False)[:3]
             if train:
                 accum_ln_p += ln_p
 
-        y, b = self.forward(h, x, l, train, action=True)[3:5]
+        y, b = self.forward(h, x, m, train, action=True)[3:5]
         if train:
             accum_ln_p += ln_p
 
@@ -79,7 +79,20 @@ class RAM(chainer.Chain):
 
         return self.loss
 
-    def forward(self, h, x, l, train, action):
+    def forward(self, h, x, m, train, action):
+        if train:
+            # generate sample from N(mean,var)
+            l = F.gaussian(mean=m, ln_var=self.ln_var)
+            l = F.clip(l, -1., 1.)
+
+            # get -ln(location policy)
+            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
+            ln_p = 0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
+            ln_p = F.reshape(ln_p, (-1,))
+        else:
+            l = m
+
         # Retina Encoding
         if self.xp == np:
             loc = l.data
@@ -106,19 +119,6 @@ class RAM(chainer.Chain):
         # Location Net
         m = F.tanh(self.fc_hl(h))
 
-        if train:
-            # generate sample from N(mean,var)
-            l = F.gaussian(mean=m, ln_var=self.ln_var)
-            l = F.clip(l, -1., 1.)
-
-            # get -ln(location policy)
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            ln_p = 0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
-            ln_p = F.reshape(ln_p, (-1,))
-        else:
-            l = m
-
         if action:
             # Action Net
             y = self.fc_ha(h)
@@ -126,14 +126,14 @@ class RAM(chainer.Chain):
             b = F.reshape(b, (-1,))
 
             if train:
-                return h, l, ln_p, y, b
+                return h, m, ln_p, y, b
             else:
-                return h, l, None, y, None
+                return h, m, None, y, None
         else:
             if train:
-                return h, l, ln_p, None, None
+                return h, m, ln_p, None, None
             else:
-                return h, l, None, None, None
+                return h, m, None, None, None
 
     def predict(self, x, init_l):
         self.clear()
@@ -144,16 +144,16 @@ class RAM(chainer.Chain):
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile=not train)
 
-        l = chainer.Variable(
+        m = chainer.Variable(
             self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
         locs = np.array(init_l).reshape(1, 2)
         for i in range(self.n_step - 1):
-            h, l = self.forward(h, x, l, False, action=False)[:2]
+            h, m = self.forward(h, x, m, False, action=False)[:2]
             locs = np.vstack([locs, l.data[0]])
-        y = self.forward(h, x, l, False, action=True)[3]
+        y = self.forward(h, x, m, False, action=True)[3]
         y = self.xp.argmax(y.data,axis=1)[0]
 
         if self.xp != np:
