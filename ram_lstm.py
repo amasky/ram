@@ -81,10 +81,14 @@ class RAM(chainer.Chain):
 
     def forward(self, x, l, train, action):
         # Retina Encoding
-        hg = crop(x, loc=l.data, size=self.g_size)
+        if self.xp == np:
+            loc = l.data
+        else:
+            loc = self.xp.asnumpy(l.data)
+        hg = crop(x, loc=loc, size=self.g_size)
         for k in range(1, self.scale):
             s = np.power(2,k)
-            patch = crop(x, loc=l.data, size=self.g_size*s)
+            patch = crop(x, loc=loc, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
             hg = F.concat((hg, patch), axis=1)
         hg = F.relu(self.emb_x(hg))

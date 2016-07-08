@@ -18,8 +18,8 @@ class Crop(function.Function):
         x_p[:,:,p:p+w_i,p:p+w_i] = x[0]
 
         loc = (self.loc+1)*0.5*(w_i+1)
-        loc = xp.clip(loc, 0, w_i)
-        loc = xp.floor(loc).astype(np.int32)
+        loc = np.clip(loc, 0, w_i)
+        loc = np.floor(loc).astype(np.int32)
         loc += p
 
         w_o = self.size
