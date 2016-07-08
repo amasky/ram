@@ -20,12 +20,6 @@ Reccurent Attention Model with Chainer based on the following paper
 ![Ex.2](figure/ex2.png)
 ![Ex.3](figure/ex3.png)
 
-Training the model without LSTM takes a day with CPU (reaches 96% accuracy)  
-![loss and accuracy](figure/ram_wolstm_log.png)
-
-Training the model with LSTM takes ??? with CPU  
-(still searching for the hyper-parameters to get the best accuracy in the paper...)
-
 ## Dependencies  
 Python(2 or 3), Chainer, scikit-learn, PIL, matplotlib, tqdm  
 
