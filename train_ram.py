@@ -8,7 +8,7 @@ parser.add_argument("-g", "--gpu", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
-parser.add_argument("-v", "--variance", type=float, default=0.03,
+parser.add_argument("-v", "--variance", type=float, default=0.05,
                     help="variance of the location policy")
 parser.add_argument("-e", "--epoch", type=int, default=500,
                     help="iterate training given epoch times")
@@ -47,7 +47,7 @@ else:
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8,
             n_step=6, scale=1, variance=args.variance)
 
-lr_base = 1e-2
+lr_base = 1e-3
 optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
@@ -108,7 +108,7 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-3*np.log(10)/n_epoch)
+lr_gamma = np.exp(-2*np.log(10)/n_epoch)
 print("going to train {} epoch".format(n_epoch))
 
 for epoch in range(n_epoch):
