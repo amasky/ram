@@ -47,7 +47,7 @@ else:
 model = RAM(n_e=128, n_h=256, in_size=28, g_size=8,
             n_step=6, scale=1, variance=args.variance)
 
-lr_base = 1e-3
+lr_base = 1e-2
 optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
@@ -108,7 +108,7 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-np.log(10)/n_epoch)
+lr_gamma = np.exp(-3*np.log(10)/n_epoch) # drop by 10^-3 for n_epoch
 print("going to train {} epoch".format(n_epoch))
 
 for epoch in range(n_epoch):
