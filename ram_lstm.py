@@ -10,7 +10,7 @@ from crop import crop
 class RAM(chainer.Chain):
 
     def __init__(self, n_e=128, n_h=256, in_size=28, g_size=8,
-                n_step=6, scale=1, variance=0.05):
+                n_step=6, scale=1, variance=0.01):
         super(RAM, self).__init__(
             emb_l = L.Linear(2, n_e), # embed location
             emb_x = L.Linear(g_size*g_size*scale, n_e), # embed image

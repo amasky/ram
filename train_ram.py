@@ -8,7 +8,7 @@ parser.add_argument("-g", "--gpu", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
-parser.add_argument("-v", "--variance", type=float, default=0.05,
+parser.add_argument("-v", "--variance", type=float, default=0.01,
                     help="variance of the location policy")
 parser.add_argument("-e", "--epoch", type=int, default=500,
                     help="iterate training given epoch times")
