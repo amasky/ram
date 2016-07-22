@@ -117,7 +117,9 @@ class RAM(chainer.Chain):
         h = F.relu(self.core_hh(h) + self.core_gh(g))
 
         # Location Net
-        m = F.tanh(self.fc_hl(h))
+        # unchain: loss with reinforce only backprops to fc_hl
+        hu = chainer.Variable(h.data, volatile=not train)
+        m = F.tanh(self.fc_hl(hu))
 
         if action:
             # Action Net
