@@ -64,13 +64,13 @@ class RAM(chainer.Chain):
         self.accuracy = F.accuracy(y, t)
 
         if train:
-            # reward
-            r = self.xp.where(
-                self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
+            # reward -> cost
+            c = self.xp.where(
+                self.xp.argmax(y.data,axis=1)==t.data, 0, 1)
             # MSE between reward and baseline
-            self.loss += F.sum((r-b) * (r-b)) / bs
+            self.loss += F.sum((c-b) * (c-b)) / bs
             # loss with reinforce rule
-            self.loss += F.sum(accum_ln_p * (r-b)) / bs
+            self.loss += F.sum(accum_ln_p * (c-b)) / bs
 
         return self.loss
 
@@ -80,10 +80,10 @@ class RAM(chainer.Chain):
             l = F.gaussian(mean=m, ln_var=self.ln_var)
             l = F.clip(l, -1., 1.)
 
-            # get -ln(location policy)
+            # get ln(location policy)
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
             m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            ln_p = 0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
+            ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
             ln_p = F.reshape(ln_p, (-1,))
         else:
             l = m
@@ -113,8 +113,7 @@ class RAM(chainer.Chain):
 
         # Location Net
         # unchain: loss with reinforce only backprops to fc_hl
-        hu = chainer.Variable(h.data, volatile=not train)
-        m = F.tanh(self.fc_hl(hu))
+        m = F.tanh(self.fc_hl(chainer.Variable(h.data, volatile=not train)))
 
         if action:
             # Action Net
