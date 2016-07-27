@@ -117,15 +117,15 @@ class RAM(chainer.Chain):
         h = F.relu(self.core_hh(h) + self.core_gh(g))
 
         # Location Net
-        # loss with reinforce only backprops to fc_hl
-        m = F.tanh(self.fc_hl(chainer.Variable(h.data, volatile=not train)))
+        h_truncated = chainer.Variable(h.data, volatile=not train)
+        m = F.tanh(self.fc_hl(h_truncated))
 
         if action:
             # Action Net
             y = self.fc_ha(h)
 
             # Baseline
-            b = F.sigmoid(self.fc_hb((chainer.Variable(h.data, volatile=not train))))
+            b = F.sigmoid(self.fc_hb(h_truncated))
             b = F.reshape(b, (-1,))
 
             if train:
