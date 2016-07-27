@@ -10,7 +10,7 @@ parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
 parser.add_argument("-v", "--variance", type=float, default=0.01,
                     help="variance of the location policy")
-parser.add_argument("-e", "--epoch", type=int, default=500,
+parser.add_argument("-e", "--epoch", type=int, default=1000,
                     help="iterate training given epoch times")
 parser.add_argument("-f", "--filename", type=str, default="ram",
                     help="prefix of output filenames")
@@ -108,7 +108,7 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-3*np.log(10)/n_epoch) # drop by 10^-3 for n_epoch
+lr_gamma = np.exp(-2*np.log(10)/n_epoch) # drop by 10^-2 for n_epoch
 print("going to train {} epoch".format(n_epoch))
 
 for epoch in range(n_epoch):

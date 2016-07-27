@@ -118,7 +118,9 @@ class RAM(chainer.Chain):
         if action:
             # Action Net
             y = self.fc_ha(h)
-            b = F.sigmoid(self.fc_hb(h))
+
+            # Baseline
+            b = F.sigmoid(self.fc_hb((chainer.Variable(h.data, volatile=not train))))
             b = F.reshape(b, (-1,))
 
             if train:
