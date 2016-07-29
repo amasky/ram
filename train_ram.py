@@ -44,8 +44,7 @@ if args.lstm:
     from ram_lstm import RAM
 else:
     from ram_wolstm import RAM
-model = RAM(n_e=128, n_h=256, in_size=28, g_size=8,
-            n_step=6, scale=1, variance=args.variance)
+model = RAM(n_e=128, n_h=256, g_size=8, n_step=6, scale=1, var=args.variance)
 
 lr_base = 1e-2
 optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
