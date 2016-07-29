@@ -125,7 +125,7 @@ class RAM(chainer.Chain):
             y = self.fc_ha(h)
 
             # Baseline
-            b = F.sigmoid(self.fc_hb(h_truncated))
+            b = F.sigmoid(self.fc_hb(h))
             b = F.reshape(b, (-1,))
 
             if train:
