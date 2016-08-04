@@ -1,6 +1,6 @@
-# Reccurent Attention Model
+# Recurrent Attention Model
 
-Reccurent Attention Model with Chainer based on the following paper  
+Recurrent Attention Model with Chainer based on the following paper  
 [arXiv:1406.6247](http://arxiv.org/abs/1406.6247): Recurrent Models of Visual Attention [Volodymyr Mnih+ 2014]  
 
 ## Features  
