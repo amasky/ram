@@ -1,6 +1,6 @@
-# Reccurent Attention Model
+# Recurrent Attention Model
 
-Reccurent Attention Model with Chainer based on the following paper  
+Recurrent Attention Model with Chainer based on the following paper  
 [arXiv:1406.6247](http://arxiv.org/abs/1406.6247): Recurrent Models of Visual Attention [Volodymyr Mnih+ 2014]  
 
 ## Features  
@@ -13,7 +13,7 @@ Reccurent Attention Model with Chainer based on the following paper
 
 * hyper-parameters to get the best accuracy in the paper  
 * multi-scale glimpse  
-* models to solve "Translated MNIST" task  
+* models to solve "Translated MNIST" & "Translated Cluttered" tasks  
 
 ## Examples  
 ![Ex.1](figure/ex1.png)
@@ -37,8 +37,9 @@ When you use LSTM units in core RNN layer, add the option "--lstm".
 ➜ python train.py -g 0 --lstm  
 ```
 
-After training, you can get predictions by the trained model.  
+After training, you can get inferences by the trained model.  
+The results may not show up (with matplotlib) depend on the environment.  
 
 ```shellsession
-➜ python predict.py -m ram.chainermodel  
+➜ python infer.py -m ram.chainermodel  
 ```
