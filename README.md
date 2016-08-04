@@ -13,7 +13,7 @@ Reccurent Attention Model with Chainer based on the following paper
 
 * hyper-parameters to get the best accuracy in the paper  
 * multi-scale glimpse  
-* models to solve "Translated MNIST" task  
+* models to solve "Translated MNIST" & "Translated Cluttered" tasks  
 
 ## Examples  
 ![Ex.1](figure/ex1.png)
@@ -38,7 +38,8 @@ When you use LSTM units in core RNN layer, add the option "--lstm".
 ```
 
 After training, you can get predictions by the trained model.  
+The results may not show up (with matplotlib) depend on the environment.  
 
 ```shellsession
-➜ python predict.py -m ram.chainermodel  
+➜ python infer.py -m ram.chainermodel  
 ```
