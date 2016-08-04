@@ -70,7 +70,7 @@ class RAM(chainer.Chain):
             # reward -> cost
             c = self.xp.where(
                 self.xp.argmax(y.data,axis=1)==t.data, 0, 1)
-            # MSE between reward and baseline
+            # MSE between cost and baseline
             self.loss += F.sum((c-b) * (c-b)) / bs
             # loss with reinforce rule
             self.loss += F.sum(accum_ln_p * (c-b)) / bs
