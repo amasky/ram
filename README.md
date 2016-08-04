@@ -37,7 +37,7 @@ When you use LSTM units in core RNN layer, add the option "--lstm".
 ➜ python train.py -g 0 --lstm  
 ```
 
-After training, you can get predictions by the trained model.  
+After training, you can get inferences by the trained model.  
 The results may not show up (with matplotlib) depend on the environment.  
 
 ```shellsession
