@@ -153,7 +153,7 @@ class RAM(chainer.Chain):
         locs = np.array(init_l).reshape(1, 2)
         for i in range(self.n_step - 1):
             h, m = self.forward(h, x, m, False, action=False)[:2]
-            locs = np.vstack([locs, l.data[0]])
+            locs = np.vstack([locs, m.data[0]])
         y = self.forward(h, x, m, False, action=True)[3]
         y = self.xp.argmax(y.data,axis=1)[0]
 

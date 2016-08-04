@@ -33,10 +33,9 @@ if args.lstm:
     from ram_lstm import RAM
 else:
     from ram_wolstm import RAM
-in_size = 28
 g_size = 8
 n_step = 6
-model = RAM(n_e=128, n_h=256, in_size=in_size, g_size=g_size, n_step=n_step)
+model = RAM(n_e=128, n_h=256, g_size=g_size, n_step=n_step)
 serializers.load_hdf5(args.model, model)
 
 gpuid = args.gpu
@@ -61,6 +60,7 @@ else:
     color = (255, 0, 0)
 
 # loc in real values to index
+in_size = test_data.shape[2]
 margin = g_size/2
 locs = (locs+1)*0.5*(in_size-g_size+1) + margin
 locs = np.clip(locs, margin, in_size-margin)
