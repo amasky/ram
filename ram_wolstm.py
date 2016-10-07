@@ -57,7 +57,6 @@ class RAM(chainer.Chain):
             h, m, ln_p = self.forward(h, x, m, train, action=False)[:3]
             if train:
                 accum_ln_p += ln_p
-
         y, b = self.forward(h, x, m, train, action=True)[3:5]
         if train:
             accum_ln_p += ln_p
@@ -135,21 +134,19 @@ class RAM(chainer.Chain):
             else:
                 return h, m, None, None, None
 
-    def predict(self, x, init_l):
+    def infer(self, x, init_loc):
         self.clear()
-        bs = 1 # batch size
         train = False
-
+        bs = 1 # batch size
+        locs = np.array(init_loc).reshape(1, 2)
         h = chainer.Variable(
             self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
             volatile=not train)
-
         m = chainer.Variable(
-            self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
+            self.xp.asarray(init_loc).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
-        locs = np.array(init_l).reshape(1, 2)
         for i in range(self.n_step - 1):
             h, m = self.forward(h, x, m, False, action=False)[:2]
             locs = np.vstack([locs, m.data[0]])
@@ -157,7 +154,6 @@ class RAM(chainer.Chain):
         y = self.xp.argmax(y.data,axis=1)[0]
 
         if self.xp != np:
-            locs = self.xp.asnumpy(locs)
             y = self.xp.asnumpy(y)
-
+            locs = self.xp.asnumpy(locs)
         return y, locs

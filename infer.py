@@ -45,13 +45,12 @@ if gpuid >= 0:
     model.to_gpu()
 
 
-# predict
+# inference
 index = np.random.randint(0, 9999)
 x = chainer.Variable(
     xp.asarray(test_data[index:index+1].copy()),
     volatile="on")
-y, locs = model.predict(x, init_l=(0,0))
-
+y, locs = model.infer(x, init_loc=(0,0))
 
 # green if correct otherwise red
 if y == test_targets[index]:
@@ -76,7 +75,7 @@ import PIL
 from PIL import ImageDraw
 image = PIL.Image.fromarray(test_data[index][0]*255).convert('RGB')
 
-for i in range(0, n_step):
+for i in range(n_step):
     plt.subplot(1, n_step, i+1)
     img_i = image.copy()
     draw = ImageDraw.Draw(img_i)
