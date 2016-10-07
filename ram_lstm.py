@@ -88,7 +88,7 @@ class RAM(chainer.Chain):
         # Core Net
         h = self.core_lstm(g)
 
-        # Location Net: unchain h
+        # Location Net: truncate h
         h_truncated = chainer.Variable(h.data, volatile=not train)
         m = self.fc_hl(h_truncated)
 
@@ -101,7 +101,7 @@ class RAM(chainer.Chain):
             m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
             ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
             ln_p = F.reshape(ln_p, (-1,))
-            # unchain l
+            # truncate l
             l = chainer.Variable(l.data, volatile=not train)
         else:
             l = m
