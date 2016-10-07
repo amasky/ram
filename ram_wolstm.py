@@ -81,7 +81,6 @@ class RAM(chainer.Chain):
         if train:
             # generate sample from N(mean,var)
             l = F.gaussian(mean=m, ln_var=self.ln_var)
-            l = F.clip(l, -1., 1.)
 
             # get ln(location policy)
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
@@ -96,11 +95,11 @@ class RAM(chainer.Chain):
             loc = l.data
         else:
             loc = self.xp.asnumpy(l.data)
-        hg = crop(x, loc=loc, size=self.g_size)
+        hg = crop(x, center=loc, size=self.g_size)
         # multi-scale glimpse
         for k in range(1, self.scale):
             s = np.power(2,k)
-            patch = crop(x, loc=loc, size=self.g_size*s)
+            patch = crop(x, center=loc, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
             hg = F.concat((hg, patch), axis=1)
         hg = F.relu(self.emb_x(hg))
@@ -116,14 +115,14 @@ class RAM(chainer.Chain):
 
         # Location Net
         h_truncated = chainer.Variable(h.data, volatile=not train)
-        m = F.tanh(self.fc_hl(h_truncated))
+        m = self.fc_hl(h_truncated)
 
         if action:
             # Action Net
             y = self.fc_ha(h)
 
             # Baseline
-            b = F.sigmoid(self.fc_hb(h))
+            b = F.relu(self.fc_hb(h))
             b = F.reshape(b, (-1,))
 
             if train:

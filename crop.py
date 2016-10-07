@@ -4,37 +4,58 @@ from chainer import function
 
 class Crop(function.Function):
 
-    def __init__(self, loc, size):
-        self.size = size
-        self.pad = (size+1) // 2
-        self.loc = loc
+    def __init__(self, center, size):
+        if type(size) is not tuple:
+            self.size = np.array([size, size])
+        else:
+            self.size = size
+        self.center = center
 
     def forward(self, x):
         xp = cuda.get_array_module(*x)
-        n, c, w_i = x[0].shape[:3]
+        n, c, h_i, w_i = x[0].shape
+        size_i = np.asarray(x[0].shape[2:4])
+        # [-1, 1]^2 -> [0, h_i]x[0, w_i]
+        center = 0.5 * (self.center+1) * (size_i+1)
+        # tl: topleft
+        tl = center - 0.5*self.size
+        tl = np.round(tl).astype(np.int32)
 
-        p = self.pad
-        x_p = xp.zeros(shape=(n,c,w_i+2*p,w_i+2*p), dtype=np.float32)
-        x_p[:,:,p:p+w_i,p:p+w_i] = x[0]
-
-        loc = (self.loc+1)*0.5*(w_i+1)
-        loc = np.clip(loc, 0, w_i)
-        loc = np.floor(loc).astype(np.int32)
-        loc += p
-
-        w_o = self.size
-        y = xp.zeros(shape=(n,c,w_o,w_o), dtype=np.float32)
+        h_o, w_o = self.size
+        y = xp.zeros(shape=(n,c,h_o,w_o), dtype=np.float32)
         for k in range(n):
-            y[k] = x_p[k,:,loc[k,0]-p:loc[k,0]+p,loc[k,1]-p:loc[k,1]+p]
+            tl_y, tl_x = tl[k] # k-th batch
+            range_y = np.arange(tl_y, tl_y+h_o)
+            range_x = np.arange(tl_x, tl_x+w_o)
+            cond_y = (range_y < h_i) & (range_y > -1)
+            cond_x = (range_x < w_i) & (range_x > -1)
+            ind_y = range_y[cond_y]
+            ind_x = range_x[cond_x]
+
+            h_b = np.max((0, 0 - range_y[0]))
+            h_a = np.max((0, range_y[-1] - (h_i+1)))
+            w_b = np.max((0, 0 - range_x[0]))
+            w_a = np.max((0, range_x[-1] - (w_i+1)))
+            pad_width = ((0, 0), (h_b, h_a), (w_b, w_a))
+
+            if xp == np:
+                rho = x[0][k][:,ind_y,:][:,:,ind_x]
+                y[k] = np.pad(rho, pad_width, 'constant', constant_values=0)
+            else:
+                cond_y = np.where(cond_y)[0]
+                cond_x = np.where(cond_x)[0]
+                if cond_y.size and cond_x.size:
+                    y[k, :, cond_y[0]:cond_y[-1]+1, cond_x[0]:cond_x[-1]+1] \
+                        = x[0][k, :, ind_y[0]:ind_y[-1]+1, ind_x[0]:ind_x[-1]+1]
         return y,
 
     # do not backward (always return 0)
     def backward(self, x, gy):
         xp = cuda.get_array_module(*x)
         n, c = gy[0].shape[:2]
-        w_i = x[0].shape[2]
-        gx = xp.zeros(shape=(n,c,w_i,w_i), dtype=np.float32)
+        h_i, w_i = x[0].shape[2:4]
+        gx = xp.zeros(shape=(n,c,h_i,w_i), dtype=np.float32)
         return gx,
 
-def crop(x, loc, size):
-    return Crop(loc, size)(x)
+def crop(x, center, size):
+    return Crop(center, size)(x)
