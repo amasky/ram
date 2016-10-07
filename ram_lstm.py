@@ -38,7 +38,8 @@ class RAM(chainer.Chain):
 
         # init mean location
         l = chainer.Variable(
-            self.xp.asarray(np.random.uniform(-1, 1, size=(bs,2)).astype(np.float32)),
+            self.xp.asarray(
+                np.random.uniform(-1, 1, size=(bs,2)).astype(np.float32)),
             volatile=not train)
 
         if train:
@@ -99,7 +100,6 @@ class RAM(chainer.Chain):
         if train:
             # generate sample from N(mean,var)
             l = F.gaussian(mean=m, ln_var=self.ln_var)
-            #l = F.clip(l, -1., 1.)
 
             # get ln(location policy)
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)

@@ -8,7 +8,7 @@ class Crop(function.Function):
         if type(size) is not tuple:
             self.size = np.array([size, size])
         else:
-            self.size = size
+            self.size = np.array(size)
         self.center = center
 
     def forward(self, x):
@@ -32,10 +32,10 @@ class Crop(function.Function):
             ind_y = range_y[cond_y]
             ind_x = range_x[cond_x]
 
-            h_b = np.max((0, 0 - range_y[0]))
-            h_a = np.max((0, range_y[-1] + 1 - h_i))
-            w_b = np.max((0, 0 - range_x[0]))
-            w_a = np.max((0, range_x[-1] + 1 - w_i))
+            h_b = np.clip(0 - range_y[0], 0, 8)
+            h_a = np.clip(range_y[-1]+1 - h_i, 0, 8)
+            w_b = np.clip(0 - range_x[0], 0, 8)
+            w_a = np.clip(range_x[-1]+1 - w_i, 0, 8)
             pad_width = ((0, 0), (h_b, h_a), (w_b, w_a))
 
             if xp == np:
