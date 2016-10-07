@@ -47,7 +47,7 @@ else:
 model = RAM(n_e=128, n_h=256, g_size=8, n_step=6, scale=1, var=args.variance)
 
 lr_base = 1e-2
-optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
+optimizer = chainer.optimizers.NesterovAG(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
 optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))

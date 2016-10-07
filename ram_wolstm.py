@@ -47,11 +47,6 @@ class RAM(chainer.Chain):
                 np.random.uniform(-1, 1, size=(bs,2)).astype(np.float32)),
             volatile=not train)
 
-        if train:
-            self.ln_var = chainer.Variable(
-                (self.xp.ones(shape=(bs,2), dtype=np.float32)*np.log(self.var)),
-                volatile=not train)
-
         # forward n_steps times
         for i in range(self.n_step - 1):
             h, l, ln_p = self.forward(h, x, l, train, action=False)[:3]
@@ -98,19 +93,21 @@ class RAM(chainer.Chain):
         # Core Net
         h = F.relu(self.core_hh(h) + self.core_gh(g))
 
-        # Location Net
+        # Location Net: unchain h
         h_truncated = chainer.Variable(h.data, volatile=not train)
         m = self.fc_hl(h_truncated)
 
         if train:
             # generate sample from N(mean,var)
-            l = F.gaussian(mean=m, ln_var=self.ln_var)
-
+            eps = self.xp.random.normal(0,1,size=m.data.shape).astype(np.float32)
+            l = m + np.sqrt(self.var)*eps
             # get ln(location policy)
             l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
             m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
             ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
             ln_p = F.reshape(ln_p, (-1,))
+            # unchain l
+            l = chainer.Variable(l.data, volatile=not train)
         else:
             l = m
 
