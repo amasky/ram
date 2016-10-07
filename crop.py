@@ -33,9 +33,9 @@ class Crop(function.Function):
             ind_x = range_x[cond_x]
 
             h_b = np.max((0, 0 - range_y[0]))
-            h_a = np.max((0, range_y[-1] - (h_i+1)))
+            h_a = np.max((0, range_y[-1] + 1 - h_i))
             w_b = np.max((0, 0 - range_x[0]))
-            w_a = np.max((0, range_x[-1] - (w_i+1)))
+            w_a = np.max((0, range_x[-1] + 1 - w_i))
             pad_width = ((0, 0), (h_b, h_a), (w_b, w_a))
 
             if xp == np:

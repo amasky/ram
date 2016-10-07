@@ -37,24 +37,21 @@ class RAM(chainer.Chain):
         accum_ln_p = 0
 
         # init mean location
-        m = chainer.Variable(
-            self.xp.zeros(shape=(bs,2), dtype=np.float32),
+        l = chainer.Variable(
+            self.xp.asarray(np.random.uniform(-1, 1, size=(bs,2)).astype(np.float32)),
             volatile=not train)
 
         if train:
             self.ln_var = chainer.Variable(
-                (self.xp.ones(shape=(bs,2), dtype=np.float32)
-                *np.log(self.var)),
+                (self.xp.ones(shape=(bs,2), dtype=np.float32)*np.log(self.var)),
                 volatile=not train)
 
         # forward n_steps times
         for i in range(self.n_step - 1):
-            m, ln_p = self.forward(x, m, train, action=False)[:2]
+            l, ln_p = self.forward(x, l, train, action=False)[:2]
             if train:
                 accum_ln_p += ln_p
-        y, b = self.forward(x, m, train, action=True)[2:4]
-        if train:
-            accum_ln_p += ln_p
+        y, b = self.forward(x, l, train, action=True)[2:4]
 
         # loss with softmax cross entropy
         self.loss = F.softmax_cross_entropy(y, t)
@@ -71,20 +68,7 @@ class RAM(chainer.Chain):
 
         return self.loss
 
-    def forward(self, x, m, train, action):
-        if train:
-            # generate sample from N(mean,var)
-            l = F.gaussian(mean=m, ln_var=self.ln_var)
-            #l = F.clip(l, -1., 1.)
-
-            # get ln(location policy)
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
-            ln_p = F.reshape(ln_p, (-1,))
-        else:
-            l = m
-
+    def forward(self, x, l, train, action):
         # Retina Encoding
         if self.xp == np:
             loc = l.data
@@ -112,38 +96,51 @@ class RAM(chainer.Chain):
         h_truncated = chainer.Variable(h.data, volatile=not train)
         m = self.fc_hl(h_truncated)
 
+        if train:
+            # generate sample from N(mean,var)
+            l = F.gaussian(mean=m, ln_var=self.ln_var)
+            #l = F.clip(l, -1., 1.)
+
+            # get ln(location policy)
+            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
+            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
+            ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
+            ln_p = F.reshape(ln_p, (-1,))
+        else:
+            l = m
+
         if action:
             # Action Net
             y = self.fc_ha(h)
 
             # Baseline
-            b = F.relu(self.fc_hb(h))
+            b = self.fc_hb(h)
             b = F.reshape(b, (-1,))
 
             if train:
-                return m, ln_p, y, b
+                return l, ln_p, y, b
             else:
-                return m, None, y, None
+                return l, None, y, None
         else:
             if train:
-                return m, ln_p, None, None
+                return l, ln_p, None, None
             else:
-                return m, None, None, None
+                return l, None, None, None
 
     def infer(self, x, init_loc):
         self.clear()
         train = False
         bs = 1 # batch size
         locs = np.array(init_loc).reshape(1, 2)
-        m = chainer.Variable(
+        l = chainer.Variable(
             self.xp.asarray(init_loc).reshape(bs,2).astype(np.float32),
             volatile=not train)
 
         # forward n_steps times
         for i in range(self.n_step - 1):
-            m = self.forward(x, m, False, action=False)[0]
-            locs = np.vstack([locs, m.data[0]])
-        y = self.forward(x, m, False, action=True)[2]
+            l = self.forward(x, l, False, action=False)[0]
+            locs = np.vstack([locs, l.data[0]])
+        y = self.forward(x, l, False, action=True)[2]
         y = self.xp.argmax(y.data,axis=1)[0]
 
         if self.xp != np:
