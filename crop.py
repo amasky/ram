@@ -32,13 +32,12 @@ class Crop(function.Function):
             ind_y = range_y[cond_y]
             ind_x = range_x[cond_x]
 
-            h_b = np.clip(0 - range_y[0], 0, 8)
-            h_a = np.clip(range_y[-1]+1 - h_i, 0, 8)
-            w_b = np.clip(0 - range_x[0], 0, 8)
-            w_a = np.clip(range_x[-1]+1 - w_i, 0, 8)
-            pad_width = ((0, 0), (h_b, h_a), (w_b, w_a))
-
             if xp == np:
+                h_b = np.clip(0 - range_y[0], 0, 8)
+                h_a = np.clip(range_y[-1]+1 - h_i, 0, 8)
+                w_b = np.clip(0 - range_x[0], 0, 8)
+                w_a = np.clip(range_x[-1]+1 - w_i, 0, 8)
+                pad_width = ((0, 0), (h_b, h_a), (w_b, w_a))
                 rho = x[0][k][:,ind_y,:][:,:,ind_x]
                 y[k] = np.pad(rho, pad_width, 'constant', constant_values=0)
             else:
@@ -46,7 +45,7 @@ class Crop(function.Function):
                 cond_x = np.where(cond_x)[0]
                 if cond_y.size and cond_x.size:
                     y[k, :, cond_y[0]:cond_y[-1]+1, cond_x[0]:cond_x[-1]+1] \
-                        = x[0][k, :, ind_y[0]:ind_y[-1]+1, ind_x[0]:ind_x[-1]+1]
+                        = x[0][k, :, ind_y[0]:ind_y[-1]+1, ind_x[0]:ind_x[-1]+1].copy()
         return y,
 
     # do not backward (always return 0)
