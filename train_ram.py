@@ -47,11 +47,11 @@ else:
 model = RAM(n_e=128, n_h=256, g_size=8, n_step=6, scale=1, var=args.variance)
 
 lr_base = 1e-2
-optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
+optimizer = chainer.optimizers.NesterovAG(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
 optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
-model.zerograds()
+model.cleargrads()
 
 if not args.lstm:
     data = model.core_hh.W.data
@@ -130,7 +130,7 @@ for epoch in range(n_epoch):
             loss_func.backward()
             loss_func.unchain_backward() # truncate
             optimizer.update()
-            model.zerograds()
+            model.cleargrads()
             loss = float(model.loss.data)
             acc = float(model.accuracy.data)
             pbar.set_description(

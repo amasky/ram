@@ -54,13 +54,15 @@ class RAM(chainer.Chain):
         self.accuracy = F.accuracy(y, t)
 
         if train:
-            # reward -> cost
-            c = self.xp.where(
-                self.xp.argmax(y.data,axis=1)==t.data, 0, 1)
+            # reward
+            r = self.xp.where(
+                self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
             # MSE between cost and baseline
-            self.loss += F.sum((c-b) * (c-b)) / bs
+            self.loss += F.sum((r-b) * (r-b)) / bs
+            # truncate b
+            b = chainer.Variable(b.data, volatile=not train)
             # loss with reinforce rule
-            self.loss += F.sum(accum_ln_p * (c-b)) / bs
+            self.loss += F.sum(-accum_ln_p * (r-b)) / bs
 
         return self.loss
 
