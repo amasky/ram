@@ -109,26 +109,23 @@ class RAM(chainer.Chain):
             ln_p = F.reshape(ln_p, (-1,))
             # truncate l
             l = chainer.Variable(l.data, volatile=not train)
-        else:
-            l = m
 
         if action:
             # Action Net
             y = self.fc_ha(h)
 
-            # Baseline
-            b = self.fc_hb(h)
-            b = F.reshape(b, (-1,))
-
             if train:
+                # Baseline
+                b = self.fc_hb(h)
+                b = F.reshape(b, (-1,))
                 return h, l, ln_p, y, b
             else:
-                return h, l, None, y, None
+                return h, m, None, y, None
         else:
             if train:
                 return h, l, ln_p, None, None
             else:
-                return h, l, None, None, None
+                return h, m, None, None, None
 
     def infer(self, x, init_loc):
         self.clear()

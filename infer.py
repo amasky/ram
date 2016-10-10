@@ -50,7 +50,7 @@ index = np.random.randint(0, 9999)
 x = chainer.Variable(
     xp.asarray(test_data[index:index+1].copy()),
     volatile="on")
-y, locs = model.infer(x, init_loc=(0,0))
+y, centers = model.infer(x, init_loc=np.random.uniform(-1,1,size=2))
 
 # green if correct otherwise red
 if y == test_targets[index]:
@@ -59,12 +59,10 @@ else:
     color = (255, 0, 0)
 
 # loc in real values to index
-in_size = test_data.shape[2]
-margin = g_size/2
-locs = (locs+1)*0.5*(in_size-g_size+1) + margin
-locs = np.clip(locs, margin, in_size-margin)
-locs = np.floor(locs).astype(np.int32)
-locs -= g_size//2
+in_size = np.asarray(test_data.shape[2:4])
+centers = 0.5 * (centers+1) * (in_size+1)
+toplefts = centers - 0.5*g_size
+toplefts = np.round(toplefts).astype(np.int32)
 
 # plot results
 import matplotlib.pyplot as plt
@@ -79,7 +77,7 @@ for i in range(n_step):
     plt.subplot(1, n_step, i+1)
     img_i = image.copy()
     draw = ImageDraw.Draw(img_i)
-    xy=[locs[i,1],locs[i,0],locs[i,1]+g_size,locs[i,0]+g_size]
+    xy=[toplefts[i,1],toplefts[i,0],toplefts[i,1]+g_size,toplefts[i,0]+g_size]
     draw.rectangle(xy=xy, outline=color)
     del draw
     plt.imshow(img_i, interpolation="none")
