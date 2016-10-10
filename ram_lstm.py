@@ -20,7 +20,6 @@ class RAM(chainer.Chain):
             fc_hl = L.Linear(n_h, 2), # core to loc
             fc_hb = L.Linear(n_h, 1), # core to baseline
         )
-        self.n_h = n_h
         self.g_size = g_size
         self.n_step = n_step
         self.scale = scale
