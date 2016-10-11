@@ -50,7 +50,7 @@ lr_base = 1e-2
 optimizer = chainer.optimizers.NesterovAG(lr=lr_base)
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(5))
-optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
+#optimizer.add_hook(chainer.optimizer.WeightDecay(rate=0.0005))
 model.cleargrads()
 
 if not args.lstm:
@@ -87,9 +87,9 @@ def test(x, t):
         for i in range(0, len(t), batchsize):
             pbar.update(batchsize)
             x_batch = chainer.Variable(
-                xp.asarray(x[i:i + batchsize].copy()), volatile="on")
+                xp.asarray(x[i:i+batchsize]), volatile="on")
             t_batch = chainer.Variable(
-                xp.asarray(t[i:i + batchsize].copy()), volatile="on")
+                xp.asarray(t[i:i+batchsize]), volatile="on")
             model(x_batch, t_batch, train=False)
             sum_loss += float(model.loss.data)
             sum_accuracy += float(model.accuracy.data)
@@ -121,10 +121,10 @@ for epoch in range(n_epoch):
     with tqdm(total=n_data) as pbar:
         for i in range(0, n_data, batchsize):
             x = chainer.Variable(
-                xp.asarray(train_data[perm[i:i+batchsize]].copy()),
+                xp.asarray(train_data[perm[i:i+batchsize]]),
                 volatile="off")
             t = chainer.Variable(
-                xp.asarray(train_targets[perm[i:i+batchsize]].copy()),
+                xp.asarray(train_targets[perm[i:i+batchsize]]),
                 volatile="off")
             loss_func = model(x, t)
             loss_func.backward()
