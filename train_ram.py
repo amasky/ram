@@ -8,7 +8,7 @@ parser.add_argument("-g", "--gpu", type=int, default=-1,
                     help="GPU device ID (CPU if negative)")
 parser.add_argument("-b", "--batchsize", type=int, default=100,
                     help="batch size")
-parser.add_argument("-v", "--variance", type=float, default=0.001,
+parser.add_argument("-v", "--variance", type=float, default=0.01,
                     help="variance of the location policy")
 parser.add_argument("-e", "--epoch", type=int, default=2000,
                     help="iterate training given epoch times")
@@ -107,7 +107,7 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-4*np.log(10)/n_epoch) # drop by 10^-4 for n_epoch
+lr_gamma = np.exp(-2*np.log(10)/n_epoch) # drop by 10^-2 for n_epoch
 print("going to train {} epoch".format(n_epoch))
 
 for epoch in range(n_epoch):
