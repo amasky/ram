@@ -8,7 +8,6 @@ parser.add_argument("--lstm", action="store_true",
                     default=False, help="use LSTM units in core layer")
 args = parser.parse_args()
 
-
 import numpy as np
 from sklearn.datasets import fetch_mldata
 print("preparing MNIST dataset...")
@@ -21,7 +20,6 @@ train_data, test_data = np.split(mnist.data, [60000], axis=0)
 train_targets, test_targets = np.split(mnist.target, [60000])
 train_data /= 255
 test_data /= 255
-
 
 import chainer
 from chainer import cuda
@@ -43,7 +41,6 @@ xp = cuda.cupy if gpuid >= 0 else np
 if gpuid >= 0:
     cuda.get_device(gpuid).use()
     model.to_gpu()
-
 
 # inference
 index = np.random.randint(0, 9999)
