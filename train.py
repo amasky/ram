@@ -18,7 +18,7 @@ parser.add_argument('-b', '--batchsize', type=int, default=50,
                     help='batch size')
 parser.add_argument('-v', '--variance', type=float, default=0.01,
                     help='variance of the location policy')
-parser.add_argument('-e', '--epoch', type=int, default=200,
+parser.add_argument('-e', '--epoch', type=int, default=300,
                     help='iterate training given epoch times')
 parser.add_argument('-f', '--filename', type=str, default='',
                     help='prefix of output filenames')
@@ -118,9 +118,9 @@ from nesterov_ag import __NesterovAG
 lr_base = 1e-2
 optimizer = __NesterovAG(lr=lr_base)
 #optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
+optimizer.use_cleargrads()
 optimizer.setup(model)
 optimizer.add_hook(chainer.optimizer.GradientClipping(10))
-model.cleargrads()
 
 
 import csv
@@ -147,10 +147,10 @@ def test(x, t):
 
 
 filename = args.filename + '_' + filename
-log = open(filename+'.log', 'w')
+log = open(filename+'.log', 'a')
 writer = csv.writer(log, lineterminator='\n')
 writer.writerow(('iter', 'loss', 'acc'))
-test_data = process(test_data)
+test_data = process(test_data) # generate test data beforehand
 loss, acc = test(test_data, test_targets)
 writer.writerow((0, loss, acc))
 log.flush()
@@ -162,33 +162,29 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-2*np.log(10)/n_epoch) # drop by 10^-2 for n_epoch
 
 for epoch in range(n_epoch):
     sys.stdout.write('(epoch: {})\n'.format(epoch+1))
     sys.stdout.flush()
 
-    optimizer.lr = lr_base * np.power(lr_gamma, epoch)
-    print('learning rate: {:.3e}'.format(optimizer.lr))
+    # drop learning rate
+    if (epoch+1) == 100:
+        optimizer.lr = lr_base * 0.1
+    if (epoch+1) == 200:
+        optimizer.lr = lr_base * 0.01
 
     perm = np.random.permutation(n_data)
     with tqdm(total=n_data) as pbar:
         for i in range(0, n_data, batchsize):
+            # generate train data on the fly
             x = chainer.Variable(
                 xp.asarray(process(train_data[perm[i:i+batchsize]])),
                 volatile='off')
             t = chainer.Variable(
                 xp.asarray(train_targets[perm[i:i+batchsize]]),
                 volatile='off')
-            model.cleargrads()
-            loss_func = model(x, t)
-            loss_func.backward()
-            loss_func.unchain_backward()
-            optimizer.update()
-            loss = float(model.loss.data)
-            acc = float(model.accuracy.data)
-            pbar.set_description(
-                'train: loss={:.3f}'.format(loss))
+            optimizer.update(model, x, t)
+            pbar.set_description('train: loss={0:.1e}, base={1:.1e}, rl={2:+.1e}'.format(float(model.loss_action.data), float(model.loss_base.data), float(model.loss_reinforce.data)))
             pbar.update(batchsize)
     sys.stderr.flush()
 
@@ -201,7 +197,7 @@ for epoch in range(n_epoch):
 
     # save model
     if (epoch+1) % 100 == 0:
-        model_filename = filename+'_epoch{0:d}.chainermodel'.format(epoch+1)
-        serializers.save_hdf5(model_filename, model)
+        model_filename = filename+'_epoch{0:d}'.format(epoch+1)
+        serializers.save_hdf5(model_filename+'.chainermodel', model)
 
 log.close()
