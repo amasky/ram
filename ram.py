@@ -84,7 +84,7 @@ class RAM(chainer.Chain):
             self.loss_base = F.mean_squared_error(r, b)
             self.loss += self.loss_base
             # loss with reinforce rule
-            self.loss_reinforce = 0.01 * F.sum(-mean_ln_p * (r-b.data))/bs
+            self.loss_reinforce = 0.001 * F.sum(-mean_ln_p * (r-b.data))/bs
             self.loss += self.loss_reinforce
         return self.loss
 
@@ -127,7 +127,7 @@ class RAM(chainer.Chain):
             eps = (self.xp.random.normal(0, 1, size=m.data.shape)
                   ).astype(self.xp.float32)
             l = m + np.sqrt(self.var)*eps
-            l = chainer.Variable(l.data, volatile=not train)
+            l = chainer.Variable(l.data, volatile=not train) # unchain l
             # get ln(location policy)
             ln_p = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
 
@@ -136,7 +136,7 @@ class RAM(chainer.Chain):
             y = self.fc_ha(self.h)
 
             if train:
-                # Baseline
+                # Baseline: unchain h
                 b = self.fc_hb(unchained_h)
                 b = F.reshape(b, (-1,))
                 return l, ln_p, y, b
