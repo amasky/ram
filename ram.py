@@ -22,10 +22,10 @@ class RAM(chainer.Chain):
                 emb_x=L.Linear(g_size*g_size*scale, n_e), # embed image
                 fc_lg=L.Linear(n_e, n_h), # loc to glimpse
                 fc_xg=L.Linear(n_e, n_h), # image to glimpse
-                core_lstm = L.LSTM(n_h, n_h), # core LSTM
-                fc_ha = L.Linear(n_h, 10), # core to action
-                fc_hl = L.Linear(n_h, 2), # core to loc
-                fc_hb = L.Linear(n_h, 1), # core to baseline
+                core_lstm=L.LSTM(n_h, n_h), # core LSTM
+                fc_ha=L.Linear(n_h, 10), # core to action
+                fc_hl=L.Linear(n_h, 2), # core to loc
+                fc_hb=L.Linear(n_h, 1), # core to baseline
             )
         else:
             super(RAM, self).__init__(
@@ -33,11 +33,11 @@ class RAM(chainer.Chain):
                 emb_x=L.Linear(g_size*g_size*scale, n_e), # embed image
                 fc_lg=L.Linear(n_e, n_h), # loc to glimpse
                 fc_xg=L.Linear(n_e, n_h), # image to glimpse
-                core_hh = L.Linear(n_h, n_h), # core rnn
-                core_gh = L.Linear(n_h, n_h), # glimpse to core
-                fc_ha = L.Linear(n_h, 10), # core to action
-                fc_hl = L.Linear(n_h, 2), # core to loc
-                fc_hb = L.Linear(n_h, 1), # core to baseline
+                core_hh=L.Linear(n_h, n_h), # core rnn
+                core_gh=L.Linear(n_h, n_h), # glimpse to core
+                fc_ha=L.Linear(n_h, 10), # core to action
+                fc_hl=L.Linear(n_h, 2), # core to loc
+                fc_hb=L.Linear(n_h, 1), # core to baseline
             )
 
     def clear(self, bs, train):
@@ -49,44 +49,44 @@ class RAM(chainer.Chain):
             self.core_lstm.reset_state()
         else:
             self.h = chainer.Variable(
-                self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32),
+                self.xp.zeros(shape=(bs,self.n_h), dtype=self.xp.float32),
                 volatile=not train)
 
     def __call__(self, x, t, train=True):
         bs = x.data.shape[0] # batch size
         self.clear(bs, train)
-        accum_ln_p = 0
-        loss = 0
+        mean_ln_p = 0
 
         # init mean location
         l = chainer.Variable(
             self.xp.asarray(
-                np.random.uniform(-1, 1, size=(bs,2)).astype(np.float32)),
+                np.random.uniform(-1, 1, size=(bs,2)).astype(self.xp.float32)),
             volatile=not train)
 
         # forward n_steps times
         for i in range(self.n_step - 1):
             l, ln_p = self.forward(x, l, train, action=False)[:2]
             if train:
-                accum_ln_p += ln_p
+                mean_ln_p += ln_p
         y, b = self.forward(x, l, train, action=True)[2:4]
+        mean_ln_p /= self.n_step
 
         # loss with softmax cross entropy
-        self.loss = F.softmax_cross_entropy(y, t)
-        loss += self.loss
+        self.loss_action = F.softmax_cross_entropy(y, t)
+        self.loss = self.loss_action
         self.accuracy = F.accuracy(y, t)
 
         if train:
             # reward
-            r = self.xp.where(
-                self.xp.argmax(y.data,axis=1)==t.data, 1, 0)
-            # MSE between reward and baseline
-            loss += F.sum((r-b) * (r-b)) / bs
-            # unchain b
-            b = chainer.Variable(b.data, volatile=not train)
+            r = (self.xp.where(self.xp.argmax(y.data,axis=1)==t.data,1.,0.)
+                ).astype(self.xp.float32)
+            # SE between reward and baseline
+            self.loss_base = F.mean_squared_error(r, b)
+            self.loss += self.loss_base
             # loss with reinforce rule
-            loss += F.sum(-accum_ln_p * (r-b)) / bs
-        return loss
+            self.loss_reinforce = 0.01 * F.sum(-mean_ln_p * (r-b.data))/bs
+            self.loss += self.loss_reinforce
+        return self.loss
 
     def forward(self, x, l, train, action):
         x.volatile = 'on'
@@ -98,7 +98,7 @@ class RAM(chainer.Chain):
         hg = crop(x, center=loc, size=self.g_size)
         # multi-scale glimpse
         for k in range(1, self.scale):
-            s = np.power(2,k)
+            s = np.power(2, k)
             patch = crop(x, center=loc, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
             hg = F.concat((hg, patch), axis=1)
@@ -125,13 +125,11 @@ class RAM(chainer.Chain):
         if train:
             # generate sample from NormalDist(mean,var)
             eps = (self.xp.random.normal(0, 1, size=m.data.shape)
-                  ).astype(np.float32)
+                  ).astype(self.xp.float32)
             l = m + np.sqrt(self.var)*eps
+            l = chainer.Variable(l.data, volatile=not train)
             # get ln(location policy)
-            l1, l2 = F.split_axis(l, indices_or_sections=2, axis=1)
-            m1, m2 = F.split_axis(m, indices_or_sections=2, axis=1)
-            ln_p = -0.5 * ((l1-m1)*(l1-m1) + (l2-m2)*(l2-m2)) / self.var
-            ln_p = F.reshape(ln_p, (-1,))
+            ln_p = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
 
         if action:
             # Action Net
@@ -139,7 +137,7 @@ class RAM(chainer.Chain):
 
             if train:
                 # Baseline
-                b = self.fc_hb(self.h)
+                b = self.fc_hb(unchained_h)
                 b = F.reshape(b, (-1,))
                 return l, ln_p, y, b
             else:
@@ -155,13 +153,13 @@ class RAM(chainer.Chain):
         bs = 1 # batch size
         self.clear(bs, train)
 
-        ys = np.zeros(shape=(self.n_step,10), dtype=np.float32)
-        locs = np.zeros(shape=(self.n_step,2), dtype=np.float32)
+        ys = self.xp.zeros(shape=(self.n_step,10), dtype=self.xp.float32)
+        locs = self.xp.zeros(shape=(self.n_step,2), dtype=self.xp.float32)
         locs[0] = np.array(init_l)
 
         # forward
         l = chainer.Variable(
-            self.xp.asarray(init_l).reshape(bs,2).astype(np.float32),
+            self.xp.asarray(init_l).reshape(bs,2).astype(self.xp.float32),
             volatile=not train)
 
         for i in range(self.n_step - 1):
