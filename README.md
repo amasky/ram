@@ -14,7 +14,13 @@ Recurrent Attention Model with Chainer based on the following paper
 * hyper-parameters to get the best scores in the paper  
 
 ## Examples  
+
+glimpse and output probability at each time step  
+
+* original MNIST
 ![examples on original MNIST](figures/figure_original.png)  
+
+* translated and cluttered MNIST
 ![examples on translated & cluttered MNIST](figures/figure_cluttered.png)  
 
 ## Dependencies  
