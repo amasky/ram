@@ -17,10 +17,12 @@ Recurrent Attention Model with Chainer based on the following paper
 
 glimpse and output probability at each time step  
 
-* original MNIST
+* original MNIST  
+
 ![examples on original MNIST](figures/figure_original.png)  
 
-* translated and cluttered MNIST
+* translated and cluttered MNIST  
+
 ![examples on translated & cluttered MNIST](figures/figure_cluttered.png)  
 
 ## Dependencies  
