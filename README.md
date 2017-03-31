@@ -29,7 +29,7 @@ glimpse and output probability at each time step
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
 
 ## Usage  
-train.py: optimize weights of a RAM model and ouputs learned weights to .chainermodel every 100 epoch
+train.py: optimizes weights of a RAM model and ouputs learned weights to .chainermodel every 100 epoch
 
 * select tasks with "--original" for 28x28 original MNIST task, with "--translated" for 60x60 translated MNIST, and "--cluttered" for 60x60 translated and cluttered MNIST
 * use GPU with "-g your_GPU_device_ID"
@@ -38,7 +38,7 @@ train.py: optimize weights of a RAM model and ouputs learned weights to .chainer
 ➜ python train.py --original  
 ```
 
-infer.py: infer by a trained RAM model (the result shows up with your matplotlib's backend)  
+infer.py: infers by a trained RAM model (the result shows up with your matplotlib's backend)  
 
 ```shellsession
 ➜ python infer.py --original -m ram_*.chainermodel  
