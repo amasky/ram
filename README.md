@@ -14,22 +14,23 @@ Recurrent Attention Model with Chainer based on the following paper
 * hyper-parameters to get the best scores in the paper  
 
 ## Examples  
-<img src="figures/figure_original.png" width="480">  
-<img src="figures/figure_cluttered.png" width="480">  
+![examples on original MNIST](figures/figure_original.png)  
+![examples on translated & cluttered MNIST](figures/figure_cluttered.png)  
 
 ## Dependencies  
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
 
 ## Usage  
+train.py: optimize weights of a RAM model and ouputs learned weights to .chainermodel every 100 epoch
 
-train.py: train a model (with --original) for 28x28 original MNIST task, with --translated for 60x60 translated MNIST, and --cluttered for 60x60 translated and cluttered MNIST
+* select tasks with "--original" for 28x28 original MNIST task, with "--translated" for 60x60 translated MNIST, and "--cluttered" for 60x60 translated and cluttered MNIST
+* use GPU with "-g your_GPU_device_ID"
+
 ```shellsession
 ➜ python train.py --original  
 ```
-If you use a GPU, add the option "-g your_GPU_device_ID".  
 
-After training, you can get inferences by a trained model.  
-The result shows up with your matplotlib's backend.  
+infer.py: infer by a trained RAM model (the result shows up with your matplotlib's backend)  
 
 ```shellsession
 ➜ python infer.py --original -m ram_*.chainermodel  
