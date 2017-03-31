@@ -23,19 +23,20 @@ class Crop(function.Function):
 
         h_o, w_o = self.size
         y = xp.zeros(shape=(n,c,h_o,w_o), dtype=np.float32)
+
         for k in range(n):
             tl_y, tl_x = tl[k] # k-th batch
             range_y = np.arange(tl_y, tl_y+h_o)
             range_x = np.arange(tl_x, tl_x+w_o)
-            cond_y = (range_y < h_i) & (range_y > -1)
-            cond_x = (range_x < w_i) & (range_x > -1)
-            ind_y = range_y[cond_y]
-            ind_x = range_x[cond_x]
-            cond_y = np.where(cond_y)[0]
-            cond_x = np.where(cond_x)[0]
-            if not cond_y.size or not cond_x.size: continue
-            y[k,:,cond_y[0]:cond_y[-1]+1,cond_x[0]:cond_x[-1]+1] \
-                = x[0][k,:,ind_y[0]:ind_y[-1]+1,ind_x[0]:ind_x[-1]+1].copy()
+            cndt_y = (range_y < h_i) & (range_y > -1)
+            cndt_x = (range_x < w_i) & (range_x > -1)
+            idx_y = range_y[cndt_y]
+            idx_x = range_x[cndt_x]
+            cndt_y = np.where(cndt_y)[0]
+            cndt_x = np.where(cndt_x)[0]
+            if not cndt_y.size or not cndt_x.size: continue
+            y[k,:,cndt_y[0]:cndt_y[-1]+1,cndt_x[0]:cndt_x[-1]+1] \
+                += x[0][k,:,idx_y[0]:idx_y[-1]+1,idx_x[0]:idx_x[-1]+1]
         return y,
 
     # do not backward (always return 0)
