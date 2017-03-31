@@ -14,8 +14,8 @@ Recurrent Attention Model with Chainer based on the following paper
 * hyper-parameters to get the best scores in the paper  
 
 ## Examples  
-![Ex.1](figures/figure_original.png)
-![Ex.2](figures/figure_cluttered.png)
+<img src="figures/figure_original.png" width="480">  
+<img src="figures/figure_cluttered.png" width="480">  
 
 ## Dependencies  
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
