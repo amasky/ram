@@ -5,41 +5,32 @@ Recurrent Attention Model with Chainer based on the following paper
 
 ## Features  
 
-* RAM model difinition file  
-* script to train the model on MNIST  
-* script to run the model on MNIST  
+* RAM model difinition on Chainer  
+* script to train RAM & infer with RAM 
+* translated MNIST & translated and cluttered MNIST task
 
 ### not yet implemented  
 
-* hyper-parameters to get the best accuracy in the paper  
-* multi-scale glimpse  
-* models to solve "Translated MNIST" & "Translated Cluttered" tasks  
+* hyper-parameters to get the best scores in the paper  
 
 ## Examples  
-![Ex.1](figure/ex1.png)
-![Ex.2](figure/ex2.png)
-![Ex.3](figure/ex3.png)
+<img src="figures/figure_original.png" width="480">  
+<img src="figures/figure_cluttered.png" width="480">  
 
 ## Dependencies  
-Python(2 or 3), Chainer, scikit-learn, PIL, matplotlib, tqdm  
+Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
 
 ## Usage  
 
+train.py: train a model (with --original) for 28x28 original MNIST task, with --translated for 60x60 translated MNIST, and --cluttered for 60x60 translated and cluttered MNIST
 ```shellsession
-➜ python train_ram.py   
+➜ python train.py --original  
 ```
+If you use a GPU, add the option "-g your_GPU_device_ID".  
 
-If you use a GPU, add the option "-g `deviceID`".  
-When you use LSTM units in core RNN layer, add the option "--lstm".  
-(better performance but a little time consuming with LSTMs)  
-
-```shellsession
-➜ python train_ram.py -g 0 --lstm  
-```
-
-After training, you can get inferences by the trained model.  
-The results may not show up (with matplotlib) depend on the environment.  
+After training, you can get inferences by a trained model.  
+The result shows up with your matplotlib's backend.  
 
 ```shellsession
-➜ python infer.py -m ram.chainermodel  
+➜ python infer.py --original -m ram_*.chainermodel  
 ```
