@@ -8,7 +8,7 @@ group.add_argument('--translated', action='store_true',
                     default=False, help='train on translated MNIST')
 group.add_argument('--cluttered', action='store_true',
                     default=False, help='train on translated & cluttered MNIST')
-parser.add_argument('--lstm', type=bool, default=True,
+parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
 parser.add_argument('-m', '--initmodel', type=str,
                     default='ram_original.chainermodel',
