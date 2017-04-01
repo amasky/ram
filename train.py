@@ -162,16 +162,14 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
+lr_gamma = np.exp(-3*np.log(10)/n_epoch) # drop by 10^-3 for n_epoch
 
 for epoch in range(n_epoch):
     sys.stdout.write('(epoch: {})\n'.format(epoch+1))
     sys.stdout.flush()
 
-    # drop learning rate
-    if (epoch+1) == 100:
-        optimizer.lr = lr_base * 0.1
-    if (epoch+1) == 200:
-        optimizer.lr = lr_base * 0.01
+    optimizer.lr = lr_base * np.power(lr_gamma, epoch)
+    print('learning rate: {:.3e}'.format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
     with tqdm(total=n_data) as pbar:
@@ -184,7 +182,13 @@ for epoch in range(n_epoch):
                 xp.asarray(train_targets[perm[i:i+batchsize]]),
                 volatile='off')
             optimizer.update(model, x, t)
-            pbar.set_description('train: loss={0:.1e}, base={1:.1e}, rl={2:+.1e}'.format(float(model.loss_action.data), float(model.loss_base.data), float(model.loss_reinforce.data)))
+            pbar.set_description(
+                ('train: loss={0:.1e}, base={1:.1e}, rl={2:+.1e}'
+                ).format(
+                    float(model.loss_action.data),
+                    float(model.loss_base.data), float(model.loss_reinforce.data)
+                )
+            )
             pbar.update(batchsize)
     sys.stderr.flush()
 
