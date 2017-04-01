@@ -84,7 +84,7 @@ class RAM(chainer.Chain):
             self.loss_base = F.mean_squared_error(r, b)
             self.loss += self.loss_base
             # loss with reinforce rule
-            self.loss_reinforce = 0.001 * F.sum(-mean_ln_p * (r-b.data))/bs
+            self.loss_reinforce = 0.01 * F.sum(-mean_ln_p * (r-b.data))/bs
             self.loss += self.loss_reinforce
         return self.loss
 
@@ -106,7 +106,6 @@ class RAM(chainer.Chain):
         hg = F.relu(self.emb_x(hg))
 
         # Location Encoding
-        l = chainer.Variable(l.data, volatile=not train) # unchain @loc net
         hl = F.relu(self.emb_l(l))
 
         # Glimpse Net
@@ -120,16 +119,18 @@ class RAM(chainer.Chain):
 
         # Location Net: unchain h
         unchained_h = chainer.Variable(self.h.data, volatile=not train)
-        m = self.fc_hl(unchained_h)
+        m = F.tanh(self.fc_hl(unchained_h))
 
         if train:
-            # generate sample from NormalDist(mean,var)
+            # generate sample from Normal(mean,var)
             eps = (self.xp.random.normal(0, 1, size=m.data.shape)
                   ).astype(self.xp.float32)
-            l = m + np.sqrt(self.var)*eps
-            l = chainer.Variable(l.data, volatile=not train) # unchain l
-            # get ln(location policy)
-            ln_p = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
+            l = m.data + np.sqrt(self.var)*eps # do not backward via l
+
+            # get log(location policy)
+            ln_p = -0.5 * F.sum(F.square(l-m), axis=1) / self.var
+
+            l = chainer.Variable(l, volatile=not train)
 
         if action:
             # Action Net
