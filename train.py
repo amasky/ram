@@ -117,10 +117,8 @@ if gpuid >= 0:
 from nesterov_ag import __NesterovAG
 lr_base = 1e-2
 optimizer = __NesterovAG(lr=lr_base)
-#optimizer = chainer.optimizers.MomentumSGD(lr=lr_base)
 optimizer.use_cleargrads()
 optimizer.setup(model)
-optimizer.add_hook(chainer.optimizer.GradientClipping(10))
 
 
 import csv
