@@ -2,9 +2,9 @@ import chainer
 from chainer import cuda
 import chainer.functions as F
 import chainer.links as L
-
 import numpy as np
 from crop import crop
+
 
 class RAM(chainer.Chain):
     def __init__(self, n_e=128, n_h=256, g_size=8, n_step=6,
@@ -40,6 +40,7 @@ class RAM(chainer.Chain):
                 fc_hb=L.Linear(n_h, 1), # core to baseline
             )
 
+
     def clear(self, bs, train):
         self.loss = None
         self.accuracy = None
@@ -51,6 +52,7 @@ class RAM(chainer.Chain):
             self.h = chainer.Variable(
                 self.xp.zeros(shape=(bs,self.n_h), dtype=self.xp.float32),
                 volatile=not train)
+
 
     def __call__(self, x, t, train=True):
         bs = x.data.shape[0] # batch size
@@ -80,29 +82,34 @@ class RAM(chainer.Chain):
             # reward
             r = (self.xp.where(self.xp.argmax(y.data,axis=1)==t.data,1.,0.)
                 ).astype(self.xp.float32)
+
             # SE between reward and baseline
             self.loss_base = F.mean_squared_error(r, b)
             self.loss += self.loss_base
+
             # loss with reinforce rule
             self.loss_reinforce = 0.01 * F.sum(-mean_ln_p * (r-b.data))/bs
             self.loss += self.loss_reinforce
+
         return self.loss
 
+
     def forward(self, x, l, train, action):
-        x.volatile = 'on'
         # Retina Encoding
+        x.volatile = 'on' # do not backward
         if self.xp == np:
             loc = l.data
         else:
             loc = self.xp.asnumpy(l.data)
         hg = crop(x, center=loc, size=self.g_size)
+
         # multi-scale glimpse
         for k in range(1, self.scale):
             s = np.power(2, k)
             patch = crop(x, center=loc, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
             hg = F.concat((hg, patch), axis=1)
-        if train: hg.volatile = 'off'
+        if train: hg.volatile = 'off' # backward upto link emb_x
         hg = F.relu(self.emb_x(hg))
 
         # Location Encoding
@@ -117,37 +124,37 @@ class RAM(chainer.Chain):
         else:
             self.h = F.relu(self.core_hh(self.h) + self.core_gh(g))
 
-        # Location Net: unchain h
-        unchained_h = chainer.Variable(self.h.data, volatile=not train)
-        m = F.tanh(self.fc_hl(unchained_h))
+        # Location Net
+        m = F.tanh(self.fc_hl(self.h))
 
         if train:
-            # generate sample from Normal(mean,var)
+            # sample from Normal(mean,var)
             eps = (self.xp.random.normal(0, 1, size=m.data.shape)
                   ).astype(self.xp.float32)
-            l = m.data + np.sqrt(self.var)*eps # do not backward via l
+            l = m.data + np.sqrt(self.var)*eps
 
-            # get log(location policy)
+            # log(location policy)
             ln_p = -0.5 * F.sum(F.square(l-m), axis=1) / self.var
-
-            l = chainer.Variable(l, volatile=not train)
-
-        if action:
-            # Action Net
-            y = self.fc_ha(self.h)
-
-            if train:
-                # Baseline: unchain h
-                b = self.fc_hb(unchained_h)
-                b = F.reshape(b, (-1,))
-                return l, ln_p, y, b
-            else:
-                return m, None, y, None
+            l = chainer.Variable(l, volatile=not train) # do not backward via l
         else:
-            if train:
-                return l, ln_p, None, None
-            else:
-                return m, None, None, None
+            l = m
+            ln_p = None
+
+        # Action Net
+        if action:
+            y = self.fc_ha(self.h)
+        else:
+            y = None
+
+        # Baseline
+        if train and action:
+            b = F.sigmoid(self.fc_hb(self.h))
+            b = F.reshape(b, (-1,))
+        else:
+            b = None
+
+        return l, ln_p, y, b
+
 
     def infer(self, x, init_l):
         train = False
