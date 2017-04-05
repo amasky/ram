@@ -8,7 +8,7 @@ from crop import crop
 
 class RAM(chainer.Chain):
     def __init__(self, n_e=128, n_h=256, g_size=8, n_step=6,
-                 scale=1, var=0.01, use_lstm=False):
+                 scale=1, var=0.05, use_lstm=False):
         self.n_h = n_h
         self.g_size = g_size
         self.n_step = n_step
@@ -57,7 +57,7 @@ class RAM(chainer.Chain):
     def __call__(self, x, t, train=True):
         bs = x.data.shape[0] # batch size
         self.clear(bs, train)
-        mean_ln_p = 0
+        sum_ln_p = 0
 
         # init mean location
         l = chainer.Variable(
@@ -65,13 +65,13 @@ class RAM(chainer.Chain):
                 np.random.uniform(-1, 1, size=(bs,2)).astype(self.xp.float32)),
             volatile=not train)
 
-        # forward n_steps times
-        for i in range(self.n_step - 1):
-            l, ln_p = self.forward(x, l, train, action=False)[:2]
-            if train:
-                mean_ln_p += ln_p
-        y, b = self.forward(x, l, train, action=True)[2:4]
-        mean_ln_p /= self.n_step
+        # forward n_steps time
+        self.forward(x, train, action=False, init_l=l)
+        for i in range(1, self.n_step-1):
+            l, ln_p, y, b = self.forward(x, train, action=False)
+            if train: sum_ln_p += ln_p
+        l, ln_p, y, b = self.forward(x, train, action=True)
+        if train: sum_ln_p += ln_p
 
         # loss with softmax cross entropy
         self.loss_action = F.softmax_cross_entropy(y, t)
@@ -88,13 +88,35 @@ class RAM(chainer.Chain):
             self.loss += self.loss_base
 
             # loss with reinforce rule
-            self.loss_reinforce = 0.01 * F.sum(-mean_ln_p * (r-b.data))/bs
+            mean_ln_p = sum_ln_p / (self.n_step - 1)
+            self.loss_reinforce = F.sum(-mean_ln_p * (r-b))/bs
             self.loss += self.loss_reinforce
 
         return self.loss
 
 
-    def forward(self, x, l, train, action):
+    def forward(self, x, train, action, init_l=None):
+        if init_l is None:
+            # Location Net @t-1
+            m = F.tanh(self.fc_hl(self.h))
+
+            if train:
+                # sample from Normal(mean,var)
+                eps = (self.xp.random.normal(0, 1, size=m.data.shape)
+                      ).astype(self.xp.float32)
+                l = m.data + np.sqrt(self.var)*eps
+
+                # log(location policy)
+                ln_p = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
+                l = chainer.Variable(l, volatile=not train)
+                # do not backward reinforce loss via l
+            else:
+                l = m
+                ln_p = None
+        else:
+            l = init_l
+            ln_p = None
+
         # Retina Encoding
         x.volatile = 'on' # do not backward
         if self.xp == np:
@@ -123,22 +145,6 @@ class RAM(chainer.Chain):
             self.h = self.core_lstm(g)
         else:
             self.h = F.relu(self.core_hh(self.h) + self.core_gh(g))
-
-        # Location Net
-        m = F.tanh(self.fc_hl(self.h))
-
-        if train:
-            # sample from Normal(mean,var)
-            eps = (self.xp.random.normal(0, 1, size=m.data.shape)
-                  ).astype(self.xp.float32)
-            l = m.data + np.sqrt(self.var)*eps
-
-            # log(location policy)
-            ln_p = -0.5 * F.sum(F.square(l-m), axis=1) / self.var
-            l = chainer.Variable(l, volatile=not train) # do not backward via l
-        else:
-            l = m
-            ln_p = None
 
         # Action Net
         if action:
@@ -170,14 +176,16 @@ class RAM(chainer.Chain):
             self.xp.asarray(init_l).reshape(bs,2).astype(self.xp.float32),
             volatile=not train)
 
-        for i in range(self.n_step - 1):
-            l, _, y = self.forward(x, l, False, action=True)[0:3]
-            locs[i+1] = l.data[0]
+        l, ln_p, y, b = self.forward(x, train, action=True, init_l=l)
+        ys[0] = F.softmax(y).data[0]
+        locs[0] = l.data[0]
+
+        for i in range(1, self.n_step):
+            l, ln_p, y, b = self.forward(x, train, action=True)
+            locs[i] = l.data[0]
             ys[i] = F.softmax(y).data[0]
 
-        y = self.forward(x, l, False, action=True)[2]
-        ys[i+1] = F.softmax(y).data[0]
-        y = self.xp.argmax(ys[i+1])
+        y = self.xp.argmax(ys[-1])
 
         if self.xp != np:
             ys = self.xp.asnumpy(ys)
