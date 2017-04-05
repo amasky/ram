@@ -29,6 +29,7 @@ train, test = chainer.datasets.get_mnist()
 train_data, train_targets = np.array(train).transpose()
 test_data, test_targets = np.array(test).transpose()
 train_data = np.array(list(train_data)).reshape(train_data.shape[0],1,28,28)
+train_data.flags.writeable = False
 test_data = np.array(list(test_data)).reshape(test_data.shape[0],1,28,28)
 train_targets = np.array(train_targets).astype(np.int32)
 test_targets = np.array(test_targets).astype(np.int32)
@@ -108,6 +109,7 @@ import PIL
 from PIL import ImageDraw
 
 test_data = process(test_data)
+test_data.flags.writeable = False
 index = np.random.randint(0, 9999)
 image = PIL.Image.fromarray(test_data[index][0]*255).convert('RGB')
 x = chainer.Variable(
