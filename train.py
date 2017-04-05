@@ -11,14 +11,14 @@ group.add_argument('--cluttered', action='store_true',
 parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
 parser.add_argument('-m', '--initmodel', type=str, default='',
-                    help='load model from given file')
+                    help='load model params from given file')
 parser.add_argument('-g', '--gpuid', type=int, default=-1,
-                    help='GPU device ID (CPU if negative)')
-parser.add_argument('-b', '--batchsize', type=int, default=50,
-                    help='batch size')
-parser.add_argument('-v', '--variance', type=float, default=0.01,
-                    help='variance of the location policy')
-parser.add_argument('-e', '--epoch', type=int, default=300,
+                    help='GPU device ID (default is CPU)')
+parser.add_argument('-b', '--batchsize', type=int, default=100,
+                    help='training batch size')
+parser.add_argument('-v', '--variance', type=float, default=0.05,
+                    help='variance of location policy')
+parser.add_argument('-e', '--epoch', type=int, default=500,
                     help='iterate training given epoch times')
 parser.add_argument('-f', '--filename', type=str, default='',
                     help='prefix of output filenames')
@@ -37,9 +37,9 @@ train_data, train_targets = np.array(train).transpose()
 test_data, test_targets = np.array(test).transpose()
 train_data = np.array(list(train_data)).reshape(train_data.shape[0],1,28,28)
 test_data = np.array(list(test_data)).reshape(test_data.shape[0],1,28,28)
+train_data.flags.writeable = False
 train_targets = np.array(train_targets).astype(np.int32)
 test_targets = np.array(test_targets).astype(np.int32)
-
 
 if args.original:
     filename = 'ram_original'
@@ -149,6 +149,7 @@ log = open(filename+'.log', 'a')
 writer = csv.writer(log, lineterminator='\n')
 writer.writerow(('iter', 'loss', 'acc'))
 test_data = process(test_data) # generate test data beforehand
+test_data.flags.writeable = False
 loss, acc = test(test_data, test_targets)
 writer.writerow((0, loss, acc))
 log.flush()
@@ -181,7 +182,7 @@ for epoch in range(n_epoch):
                 volatile='off')
             optimizer.update(model, x, t)
             pbar.set_description(
-                ('train: loss={0:.1e}, base={1:.1e}, rl={2:+.1e}'
+                ('train: loss={0:.1e}, b={1:.1e}, r={2:+.1e}'
                 ).format(
                     float(model.loss_action.data),
                     float(model.loss_base.data), float(model.loss_reinforce.data)
