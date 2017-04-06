@@ -23,7 +23,7 @@ group.add_argument('--cluttered', action='store_true',
 parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
 parser.add_argument('-m', '--initmodel', type=str,
-                    default='ram_original.chainermodel',
+                    default='ram_original_epoch500.chainermodel',
                     help='load model weights from given file')
 parser.add_argument('-g', '--gpuid', type=int, default=-1,
                     help='GPU device ID (default is CPU)')
@@ -96,8 +96,8 @@ if args.cluttered:
 
 # init RAM model
 from ram import RAM
-model = RAM(n_e=128, n_h=256, g_size=g_size, n_steps=n_steps,
-            n_scales=n_scales, use_lstm=args.lstm)
+model = RAM(
+    g_size=g_size, n_steps=n_steps, n_scales=n_scales, use_lstm=args.lstm)
 
 print('load model from {}'.format(args.initmodel))
 serializers.load_hdf5(args.initmodel, model)

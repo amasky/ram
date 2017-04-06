@@ -7,27 +7,29 @@ from crop import crop
 
 
 class RAM(chainer.Chain):
-    def __init__(self, n_e=128, n_h=256, g_size=8, n_steps=6,
-                 n_scales=1, var=0.05, use_lstm=False):
-
+    def __init__(
+        self, g_size=8, n_steps=6, n_scales=1, var=0.05, use_lstm=False
+    ):
+        d_glm = 128
+        d_core = 256
         super(RAM, self).__init__(
-            emb_l=L.Linear(2, n_e),
-            emb_x=L.Linear(g_size*g_size*n_scales, n_e),
-            fc_lg=L.Linear(n_e, n_h),
-            fc_xg=L.Linear(n_e, n_h),
-            fc_ha=L.Linear(n_h, 10),
-            fc_hl=L.Linear(n_h, 2),
-            fc_hb=L.Linear(n_h, 1),
+            emb_l=L.Linear(2, d_glm),
+            emb_x=L.Linear(g_size*g_size*n_scales, d_glm),
+            fc_lg=L.Linear(d_glm, d_core),
+            fc_xg=L.Linear(d_glm, d_core),
+            fc_ha=L.Linear(d_core, 10),
+            fc_hl=L.Linear(d_core, 2),
+            fc_hb=L.Linear(d_core, 1),
         )
 
         if use_lstm:
-            self.add_link(name='core_lstm', link=L.LSTM(n_h, n_h))
+            self.add_link(name='core_lstm', link=L.LSTM(d_core, d_core))
         else:
-            self.add_link(name='core_hh', link=L.Linear(n_h, n_h))
-            self.add_link(name='core_gh', link=L.Linear(n_h, n_h))
+            self.add_link(name='core_hh', link=L.Linear(d_core, d_core))
+            self.add_link(name='core_gh', link=L.Linear(d_core, d_core))
 
         self.use_lstm = use_lstm
-        self.n_h = n_h
+        self.d_core = d_core
         self.g_size = g_size
         self.n_steps = n_steps
         self.n_scales = n_scales
@@ -42,7 +44,7 @@ class RAM(chainer.Chain):
         if self.use_lstm:
             self.core_lstm.reset_state()
         else:
-            self.h = self.xp.zeros(shape=(bs,self.n_h), dtype=np.float32)
+            self.h = self.xp.zeros(shape=(bs,self.d_core), dtype=np.float32)
             self.h = chainer.Variable(self.h, volatile=not train)
 
 
@@ -57,12 +59,12 @@ class RAM(chainer.Chain):
         l = chainer.Variable(self.xp.asarray(l), volatile=not train)
 
         # forward n_steps time
-        sum_ln_p = 0
+        sum_ln_pi = 0
         self.forward(x, train, action=False, init_l=l)
         for i in range(1, self.n_steps):
             action = True if (i == self.n_steps - 1) else False
-            l, ln_p, y, b = self.forward(x, train, action)
-            if train: sum_ln_p += ln_p
+            l, ln_pi, y, b = self.forward(x, train, action)
+            if train: sum_ln_pi += ln_pi
 
         # loss with softmax cross entropy
         self.loss_action = F.softmax_cross_entropy(y, t)
@@ -79,8 +81,8 @@ class RAM(chainer.Chain):
             self.loss += self.loss_base
 
             # loss with reinforce rule
-            mean_ln_p = sum_ln_p / (self.n_steps - 1)
-            self.loss_reinforce = F.sum(-mean_ln_p * (r-b))/bs
+            mean_ln_pi = sum_ln_pi / (self.n_steps - 1)
+            self.loss_reinforce = F.sum(-mean_ln_pi * (r-b))/bs
             self.loss += self.loss_reinforce
 
         return self.loss
@@ -98,14 +100,14 @@ class RAM(chainer.Chain):
                 # do not backward reinforce loss via l
 
                 # log(location policy)
-                ln_p = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
+                ln_pi = -0.5 * F.sum((l-m)*(l-m), axis=1) / self.var
                 l = chainer.Variable(l, volatile=not train)
             else:
                 l = m
-                ln_p = None
+                ln_pi = None
         else:
             l = init_l
-            ln_p = None
+            ln_pi = None
 
         # Retina Encoding
         x.volatile = 'on' # do not backward
@@ -113,17 +115,17 @@ class RAM(chainer.Chain):
             loc = l.data
         else:
             loc = self.xp.asnumpy(l.data)
-        hg = crop(x, center=loc, size=self.g_size)
+        rho = crop(x, center=loc, size=self.g_size)
 
         # multi-scale glimpse
         for k in range(1, self.n_scales):
             s = np.power(2, k)
             patch = crop(x, center=loc, size=self.g_size*s)
             patch = F.average_pooling_2d(patch, ksize=s)
-            hg = F.concat((hg, patch), axis=1)
-        if train: hg.volatile = 'off' # backward up to link emb_x
+            rho = F.concat((rho, patch), axis=1)
+        if train: rho.volatile = 'off' # backward up to link emb_x
 
-        hg = F.relu(self.emb_x(hg))
+        hg = F.relu(self.emb_x(rho))
 
         # Location Encoding
         hl = F.relu(self.emb_l(l))
@@ -150,7 +152,7 @@ class RAM(chainer.Chain):
         else:
             b = None
 
-        return l, ln_p, y, b
+        return l, ln_pi, y, b
 
 
     def infer(self, x, init_l):
@@ -167,12 +169,12 @@ class RAM(chainer.Chain):
         l = init_l.reshape(bs,2).astype(np.float32)
         l = chainer.Variable(self.xp.asarray(l), volatile=not train)
 
-        l, ln_p, y, b = self.forward(x, train, action=True, init_l=l)
+        l, ln_pi, y, b = self.forward(x, train, action=True, init_l=l)
         ys[0] = F.softmax(y).data[0]
         locs[0] = l.data[0]
 
         for i in range(1, self.n_steps):
-            l, ln_p, y, b = self.forward(x, train, action=True)
+            l, ln_pi, y, b = self.forward(x, train, action=True)
             locs[i] = l.data[0]
             ys[i] = F.softmax(y).data[0]
 

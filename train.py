@@ -104,8 +104,8 @@ if args.cluttered:
 
 # init RAM model
 from ram import RAM
-model = RAM(n_e=128, n_h=256, g_size=g_size, n_steps=n_steps,
-            n_scales=n_scales, var=args.variance, use_lstm=args.lstm)
+model = RAM(g_size=g_size, n_steps=n_steps, n_scales=n_scales,
+            var=args.variance, use_lstm=args.lstm)
 
 if not args.lstm:
     data = model.core_hh.W.data
