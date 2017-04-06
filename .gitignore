@@ -2,5 +2,4 @@
 *~
 *.pyc
 *.log
-*.chainermodel
-__*
+result/*
