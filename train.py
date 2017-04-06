@@ -130,7 +130,6 @@ optimizer.setup(model)
 
 
 # get test scores
-
 def test(x, t):
     batchsize = 1000
     sum_accuracy = sum_loss = 0
@@ -161,13 +160,12 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
-lr_gamma = np.exp(-1*np.log(10) / n_epoch) # drop by 10^-1 for n_epoch
 
 for epoch in range(n_epoch):
     sys.stdout.write('(epoch: {})\n'.format(epoch+1))
     sys.stdout.flush()
 
-    optimizer.lr = lr_base * np.power(lr_gamma, epoch)
+    if args.original and epoch+1 > 400: optimizer.lr = lr_base * 0.1
     print('learning rate: {:.3e}'.format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
