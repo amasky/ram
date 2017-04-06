@@ -2,7 +2,7 @@ from chainer import cuda
 from chainer import optimizer
 
 
-class __NesterovAG(optimizer.GradientMethod):
+class NesterovAG(optimizer.GradientMethod):
 
     def __init__(self, lr=0.01, momentum=0.9):
         self.lr = lr
