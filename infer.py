@@ -22,7 +22,7 @@ group.add_argument('--cluttered', action='store_true',
                     default=False, help='train on translated & cluttered MNIST')
 parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
-parser.add_argument('-m', '--initmodel', type=str,
+parser.add_argument('-m', '--model', type=str,
                     default='ram_original_epoch500.chainermodel',
                     help='load model weights from given file')
 parser.add_argument('-g', '--gpuid', type=int, default=-1,
