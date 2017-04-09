@@ -8,7 +8,7 @@ from crop import crop
 
 class RAM(chainer.Chain):
     def __init__(
-        self, g_size=8, n_steps=6, n_scales=1, var=0.03, use_lstm=False
+        self, g_size=8, n_steps=6, n_scales=1, var=0.04, use_lstm=False
     ):
         d_glm = 128
         d_core = 256
