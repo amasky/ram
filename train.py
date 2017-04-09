@@ -22,17 +22,19 @@ group.add_argument('--cluttered', action='store_true',
                     default=False, help='train on translated & cluttered MNIST')
 parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
-parser.add_argument('-m', '--initmodel', type=str, default='',
+parser.add_argument('-m', '--model', type=str, default=None,
                     help='load model weights from given file')
+parser.add_argument('-r', '--resume', type=str, default=None,
+                    help='resume training with chainer optimizer file')
 parser.add_argument('-g', '--gpuid', type=int, default=-1,
                     help='GPU device ID (default is CPU)')
 parser.add_argument('-b', '--batchsize', type=int, default=100,
                     help='training batch size')
-parser.add_argument('-v', '--variance', type=float, default=0.03,
+parser.add_argument('-v', '--variance', type=float, default=0.04,
                     help='variance of location policy')
-parser.add_argument('-e', '--epoch', type=int, default=500,
+parser.add_argument('-e', '--epoch', type=int, default=800,
                     help='iterate training given epoch times')
-parser.add_argument('-f', '--filename', type=str, default='',
+parser.add_argument('-f', '--filename', type=str, default=None,
                     help='prefix of output filenames')
 args = parser.parse_args()
 
@@ -50,7 +52,7 @@ test_targets = np.array(test_targets).astype(np.int32)
 
 # hyper-params for each task
 if args.original:
-    filename = 'ram_original'
+    tasktype = 'original'
     # RAM params for original MNIST
     g_size = 8
     n_steps = 6
@@ -60,9 +62,9 @@ if args.original:
         return batch
 
 if args.translated:
-    filename = 'ram_translated'
+    tasktype = 'translated'
     g_size = 12
-    n_steps = 8
+    n_steps = 6
     n_scales = 3
 
     # create translated MNIST
@@ -78,9 +80,9 @@ if args.translated:
     process = translate
 
 if args.cluttered:
-    filename = 'ram_cluttered'
+    tasktype = 'cluttered'
     g_size = 12
-    n_steps = 8
+    n_steps = 6
     n_scales = 3
 
     # create cluttered MNIST
@@ -102,7 +104,7 @@ if args.cluttered:
     process = clutter
 
 
-# init RAM model
+# init RAM model and set optimizer
 from ram import RAM
 model = RAM(g_size=g_size, n_steps=n_steps, n_scales=n_scales,
             var=args.variance, use_lstm=args.lstm)
@@ -111,22 +113,48 @@ if not args.lstm:
     data = model.core_hh.W.data
     data[:] = np.identity(data.shape[0], dtype=np.float32)
 
-if args.initmodel:
-    print('load model from {}'.format(args.initmodel))
-    serializers.load_hdf5(args.initmodel, model)
+from nesterov_ag import NesterovAG
+lr_base = 1e-2
+optimizer = NesterovAG(lr=lr_base)
+optimizer.use_cleargrads()
+optimizer.setup(model)
 
+if args.model is not None:
+    print('load model from {}'.format(args.args.model))
+    serializers.load_hdf5(args.model, model)
+
+if args.resume is not None:
+    print('load optimizer state from {}'.format(args.resume))
+    serializers.load_hdf5(args.resume, optimizer)
+
+
+# GPU/CPU
 gpuid = args.gpuid
 if gpuid >= 0:
     cuda.get_device(gpuid).use()
     model.to_gpu()
 
 
-# set optimizer
-from nesterov_ag import NesterovAG
-lr_base = 1e-2
-optimizer = NesterovAG(lr=lr_base)
-optimizer.use_cleargrads()
-optimizer.setup(model)
+# logging
+if args.filename is not None:
+    filename = args.filename
+else:
+    import datetime
+    filename = datetime.datetime.now().strftime('%y%m%d%H%M%S')
+
+with open(filename+'_setting.log', 'a') as f:
+    f.write(
+        'task: '+tasktype+' MNIST\n'+
+        'glimpse size: '+str(g_size)+'\n'+
+        'number of gimpse scales: '+str(n_scales)+'\n'+
+        'number of time steps: '+str(n_steps)+'\n'+
+        'variance of location policy: '+str(args.variance)+'\n'+
+        'use LSTMs as core units: '+str(args.lstm)+'\n'+
+        'training batch size: '+str(args.batchsize)
+    )
+
+log = open(filename+'_loss.log', 'a')
+writer = csv.writer(log, lineterminator='\n')
 
 
 # get test scores
@@ -143,14 +171,11 @@ def test(x, t):
     sys.stderr.flush()
     return sum_loss*batchsize / len(t), sum_accuracy*batchsize / len(t)
 
-filename = args.filename + '_' + filename
-log = open(filename+'.log', 'a')
-writer = csv.writer(log, lineterminator='\n')
-writer.writerow(('iter', 'loss', 'acc'))
 test_data = process(test_data) # generate test data before training
 test_data.flags.writeable = False
 loss, acc = test(test_data, test_targets)
-writer.writerow((0, loss, acc))
+writer.writerow(('iteration', 'learning rate', 'loss', 'accuracy'))
+writer.writerow((0, lr_base, loss, acc))
 log.flush()
 sys.stdout.write('test: loss={0:.6f}, accuracy={1:.6f}\n'.format(loss, acc))
 sys.stdout.flush()
@@ -160,12 +185,13 @@ sys.stdout.flush()
 batchsize = args.batchsize
 n_data = len(train_targets)
 n_epoch = args.epoch
+start = optimizer.epoch
 
-for epoch in range(n_epoch):
+for epoch in range(start, n_epoch):
     sys.stdout.write('(epoch: {})\n'.format(epoch+1))
     sys.stdout.flush()
 
-    if args.original and epoch+1 > 400: optimizer.lr = lr_base * 0.1
+    if epoch+1 > 400: optimizer.lr = lr_base * 0.1
     print('learning rate: {:.3e}'.format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
@@ -186,14 +212,17 @@ for epoch in range(n_epoch):
 
     # evaluate
     loss, acc = test(test_data, test_targets)
-    writer.writerow((epoch+1, loss, acc))
+    writer.writerow((epoch+1, optimizer.lr, loss, acc))
     log.flush()
     sys.stdout.write('test: loss={0:.3f}, accuracy={1:.3f}\n'.format(loss, acc))
     sys.stdout.flush()
 
-    # save model params
+    # save model params and optimizer's state
     if (epoch+1) % 100 == 0:
         model_filename = filename+'_epoch{0:d}'.format(epoch+1)
         serializers.save_hdf5(model_filename+'.chainermodel', model)
+        serializers.save_hdf5(model_filename+'.chaineroptimizer', optimizer)
+
+    optimizer.new_epoch()
 
 log.close()
