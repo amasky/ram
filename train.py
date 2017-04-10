@@ -120,7 +120,7 @@ optimizer.use_cleargrads()
 optimizer.setup(model)
 
 if args.model is not None:
-    print('load model from {}'.format(args.args.model))
+    print('load model from {}'.format(args.model))
     serializers.load_hdf5(args.model, model)
 
 if args.resume is not None:
@@ -184,14 +184,13 @@ sys.stdout.flush()
 # optimize weights
 batchsize = args.batchsize
 n_data = len(train_targets)
-n_epoch = args.epoch
-start = optimizer.epoch
 
-for epoch in range(start, n_epoch):
-    sys.stdout.write('(epoch: {})\n'.format(epoch+1))
+for epoch in range(optimizer.epoch+1, args.epoch+1):
+    optimizer.new_epoch()
+    sys.stdout.write('(epoch: {})\n'.format(epoch))
     sys.stdout.flush()
 
-    if epoch+1 > 400: optimizer.lr = lr_base * 0.1
+    if epoch > 400: optimizer.lr = lr_base * 0.1
     print('learning rate: {:.3e}'.format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
@@ -212,17 +211,15 @@ for epoch in range(start, n_epoch):
 
     # evaluate
     loss, acc = test(test_data, test_targets)
-    writer.writerow((epoch+1, optimizer.lr, loss, acc))
+    writer.writerow((epoch, optimizer.lr, loss, acc))
     log.flush()
     sys.stdout.write('test: loss={0:.3f}, accuracy={1:.3f}\n'.format(loss, acc))
     sys.stdout.flush()
 
     # save model params and optimizer's state
-    if (epoch+1) % 100 == 0:
-        model_filename = filename+'_epoch{0:d}'.format(epoch+1)
+    if epoch % 100 == 0:
+        model_filename = filename+'_epoch{0:d}'.format(epoch)
         serializers.save_hdf5(model_filename+'.chainermodel', model)
         serializers.save_hdf5(model_filename+'.chaineroptimizer', optimizer)
-
-    optimizer.new_epoch()
 
 log.close()
