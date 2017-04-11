@@ -19,11 +19,11 @@ glimpses and output probabilities at each time step
 
 * original MNIST  
 
-![examples on original MNIST](figures/figure_original.png)  
+![examples on original MNIST](figures/ram_original.png)  
 
 * translated and cluttered MNIST  
 
-![examples on translated MNIST](figures/figure_translated.png)  
+![examples on translated MNIST](figures/ram_translated.png)  
 
 ## Dependencies  
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
