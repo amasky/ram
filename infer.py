@@ -54,7 +54,7 @@ if args.original:
 if args.translated:
     filename = 'ram_translated'
     g_size = 12
-    n_steps = 8
+    n_steps = 6
     n_scales = 3
 
     # create translated MNIST
@@ -72,7 +72,7 @@ if args.translated:
 if args.cluttered:
     filename = 'ram_cluttered'
     g_size = 12
-    n_steps = 8
+    n_steps = 6
     n_scales = 3
 
     # create cluttered MNIST
@@ -99,8 +99,8 @@ from ram import RAM
 model = RAM(
     g_size=g_size, n_steps=n_steps, n_scales=n_scales, use_lstm=args.lstm)
 
-print('load model from {}'.format(args.initmodel))
-serializers.load_hdf5(args.initmodel, model)
+print('load model from {}'.format(args.model))
+serializers.load_hdf5(args.model, model)
 
 gpuid = args.gpuid
 if gpuid >= 0:
@@ -121,7 +121,7 @@ locs = ((ls+1) / 2) * (np.array(test_data.shape[2:4])+1)
 
 # plot results
 from crop import crop
-plt.subplots_adjust(wspace=0.1, hspace=0.1)
+plt.subplots_adjust(wspace=0.35, hspace=0.05)
 
 for t in range(0, n_steps):
     # digit with glimpse
