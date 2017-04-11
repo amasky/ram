@@ -30,8 +30,6 @@ parser.add_argument('-g', '--gpuid', type=int, default=-1,
                     help='GPU device ID (default is CPU)')
 parser.add_argument('-b', '--batchsize', type=int, default=100,
                     help='training batch size')
-parser.add_argument('-v', '--variance', type=float, default=0.03,
-                    help='variance of location policy')
 parser.add_argument('-e', '--epoch', type=int, default=800,
                     help='iterate training given epoch times')
 parser.add_argument('-f', '--filename', type=str, default=None,
@@ -57,6 +55,7 @@ if args.original:
     g_size = 8
     n_steps = 6
     n_scales = 1
+    variance = 0.03
 
     def process(batch):
         return batch
@@ -66,6 +65,7 @@ if args.translated:
     g_size = 12
     n_steps = 6
     n_scales = 3
+    variance = 0.06
 
     # create translated MNIST
     def translate(batch):
@@ -84,6 +84,7 @@ if args.cluttered:
     g_size = 12
     n_steps = 6
     n_scales = 3
+    variance = 0.06
 
     # create cluttered MNIST
     def clutter(batch):
@@ -107,7 +108,7 @@ if args.cluttered:
 # init RAM model and set optimizer
 from ram import RAM
 model = RAM(g_size=g_size, n_steps=n_steps, n_scales=n_scales,
-            var=args.variance, use_lstm=args.lstm)
+            var=variance, use_lstm=args.lstm)
 
 if not args.lstm:
     data = model.core_hh.W.data
@@ -148,7 +149,7 @@ with open(filename+'_setting.log', 'a') as f:
         'glimpse size: '+str(g_size)+'\n'+
         'number of gimpse scales: '+str(n_scales)+'\n'+
         'number of time steps: '+str(n_steps)+'\n'+
-        'variance of location policy: '+str(args.variance)+'\n'+
+        'variance of location policy: '+str(variance)+'\n'+
         'use LSTMs as core units: '+str(args.lstm)+'\n'+
         'training batch size: '+str(args.batchsize)
     )
