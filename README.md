@@ -11,7 +11,7 @@ Recurrent Attention Model with Chainer based on the following paper
 
 ### not yet implemented  
 
-* hyper-parameters to get the best scores in the paper  
+* hyper-parameters to get the best scores in the paper on cluttered MNIST  
 
 ## Examples  
 
@@ -21,9 +21,10 @@ glimpses and output probabilities at each time step
 
 ![examples on original MNIST](figures/ram_original.png)  
 
-* translated and cluttered MNIST  
+* translated MNIST  
 
 ![examples on translated MNIST](figures/ram_translated.png)  
+
 
 ## Dependencies  
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
