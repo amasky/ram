@@ -23,7 +23,7 @@ glimpses and output probabilities at each time step
 
 * translated and cluttered MNIST  
 
-![examples on translated & cluttered MNIST](figures/figure_cluttered.png)  
+![examples on translated MNIST](figures/figure_translated.png)  
 
 ## Dependencies  
 Python(2 or 3), Chainer, PIL, matplotlib, tqdm  
@@ -38,8 +38,8 @@ train.py: optimizes weights of a RAM model and ouputs learned weights to \*.chai
 ➜ python train.py --original  
 ```
 
-infer.py: plot result of inference by a trained RAM model (result shows up with your matplotlib's backend)  
+infer.py: plot result of inference by a trained RAM model (result will show up with your matplotlib's backend)  
 
 ```shellsession
-➜ python infer.py --original -m ram_*.chainermodel  
+➜ python infer.py --original -m ram_original_epoch*.chainermodel  
 ```
