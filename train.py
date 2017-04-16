@@ -30,7 +30,7 @@ parser.add_argument('-g', '--gpuid', type=int, default=-1,
                     help='GPU device ID (default is CPU)')
 parser.add_argument('-b', '--batchsize', type=int, default=100,
                     help='training batch size')
-parser.add_argument('-e', '--epoch', type=int, default=800,
+parser.add_argument('-e', '--epoch', type=int, default=1000,
                     help='iterate training given epoch times')
 parser.add_argument('-f', '--filename', type=str, default=None,
                     help='prefix of output filenames')
@@ -84,7 +84,7 @@ if args.cluttered:
     g_size = 12
     n_steps = 6
     n_scales = 3
-    variance = 0.06
+    variance = 0.09
 
     # create cluttered MNIST
     def clutter(batch):
@@ -176,7 +176,7 @@ test_data = process(test_data) # generate test data before training
 test_data.flags.writeable = False
 loss, acc = test(test_data, test_targets)
 writer.writerow(('iteration', 'learning rate', 'loss', 'accuracy'))
-writer.writerow((0, lr_base, loss, acc))
+writer.writerow((optimizer.epoch, lr_base, loss, acc))
 log.flush()
 sys.stdout.write('test: loss={0:.6f}, accuracy={1:.6f}\n'.format(loss, acc))
 sys.stdout.flush()
@@ -191,7 +191,9 @@ for epoch in range(optimizer.epoch+1, args.epoch+1):
     sys.stdout.write('(epoch: {})\n'.format(epoch))
     sys.stdout.flush()
 
+    # drop learning rate on loss plateau
     if epoch > 400: optimizer.lr = lr_base * 0.1
+    if epoch > 800: optimizer.lr = lr_base * 0.01
     print('learning rate: {:.3e}'.format(optimizer.lr))
 
     perm = np.random.permutation(n_data)
@@ -214,7 +216,7 @@ for epoch in range(optimizer.epoch+1, args.epoch+1):
     loss, acc = test(test_data, test_targets)
     writer.writerow((epoch, optimizer.lr, loss, acc))
     log.flush()
-    sys.stdout.write('test: loss={0:.3f}, accuracy={1:.3f}\n'.format(loss, acc))
+    sys.stdout.write('test: loss={0:.6f}, accuracy={1:.6f}\n'.format(loss, acc))
     sys.stdout.flush()
 
     # save model params and optimizer's state
