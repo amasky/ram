@@ -37,7 +37,7 @@ train.py: optimizes weights of a RAM model and ouputs learned weights to \*.chai
 
 * with "--original" for 28x28 original MNIST task, "--translated" for 60x60 translated MNIST, and "--cluttered" for 60x60 cluttered translated MNIST  
 * training for Cluttered Translated MNIST will take around a day with CPU
-* trained on CPU with default setting or GPU with "-g YOUR_GPU_DEVICE_ID"
+* train on CPU with default setting or GPU with "-g YOUR_GPU_DEVICE_ID"
 
 ```shellsession
 ➜ python train.py --original  
