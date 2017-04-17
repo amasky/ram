@@ -6,24 +6,27 @@ Recurrent Attention Model with Chainer based on the following paper
 ## Features  
 
 * RAM model difinition on Chainer  
-* script to train RAM & infer with RAM 
-* translated MNIST & translated and cluttered MNIST task
-
-### not yet implemented  
-
-* hyper-parameters to get the best scores in the paper on cluttered MNIST  
+* script to train RAM and infer with RAM 
+* Translated MNIST and Cluttered Translated MNIST  
+* 1.13% error on 28x28 MNIST (RAM, 6 glimpses, 8x8, 1 scale)  
+* 1.58% error on 60x60 Translated MNIST (RAM, 6 glimpses, 12x12, 3 scales)  
+* 5.30% error on 60x60 Cluttered Translated MNIST (RAM, 6 glimpses, 12x12, 3 scales)  
 
 ## Examples  
 
 glimpses and output probabilities at each time step  
 
-* original MNIST  
+* Original MNIST  
 
-![examples on original MNIST](figures/ram_original.png)  
+![example on original MNIST](figures/ram_original.png)  
 
-* translated MNIST  
+* Translated MNIST  
 
-![examples on translated MNIST](figures/ram_translated.png)  
+![example on translated MNIST](figures/ram_translated.png)  
+
+* Cluttered Translated MNIST  
+
+![example on cluttered translated MNIST](figures/ram_cluttered.png)  
 
 
 ## Dependencies  
@@ -32,8 +35,8 @@ Python(2 or 3), Chainer, PIL, matplotlib, tqdm
 ## Usage  
 train.py: optimizes weights of a RAM model and ouputs learned weights to \*.chainermodel file every 100 epoch
 
-* with "--original" for 28x28 original MNIST task, "--translated" for 60x60 translated MNIST, and "--cluttered" for 60x60 translated and cluttered MNIST
-* trained on CPU with default setting or GPU with "-g your_GPU_device_ID"
+* with "--original" for 28x28 original MNIST task, "--translated" for 60x60 translated MNIST, and "--cluttered" for 60x60 cluttered translated MNIST  
+* trained on CPU with default setting or GPU with "-g YOUR_GPU_DEVICE_ID"
 
 ```shellsession
 ➜ python train.py --original  
@@ -42,5 +45,5 @@ train.py: optimizes weights of a RAM model and ouputs learned weights to \*.chai
 infer.py: plot result of inference by a trained RAM model (result will show up with your matplotlib's backend)  
 
 ```shellsession
-➜ python infer.py --original -m ram_original_epoch*.chainermodel  
+➜ python infer.py --original -m models/ram_original_epoch800.chainermodel  
 ```
