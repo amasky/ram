@@ -23,7 +23,7 @@ group.add_argument('--cluttered', action='store_true',
 parser.add_argument('--lstm', type=bool, default=False,
                     help='use LSTM units in core layer')
 parser.add_argument('-m', '--model', type=str,
-                    default='ram_original_epoch500.chainermodel',
+                    default='models/ram_original_epoch800.chainermodel',
                     help='load model weights from given file')
 parser.add_argument('-g', '--gpuid', type=int, default=-1,
                     help='GPU device ID (default is CPU)')
